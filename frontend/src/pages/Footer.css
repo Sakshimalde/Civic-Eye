@@ -1,0 +1,94 @@
+/* --- Footer.css --- */
+.app-footer {
+    background-color: #212529;
+    color: #adb5bd;
+    padding: 3rem 2rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: flex;
+    flex-wrap: wrap; /* Allows columns to wrap on smaller screens */
+    justify-content: space-around;
+    gap: 2rem; /* Space between columns */
+    border-top: 1px solid #343a40;
+}
+
+.app-footer .footer-column {
+    flex: 1;
+    min-width: 200px; /* Minimum width before wrapping */
+    max-width: 280px; /* Maximum width for consistency */
+}
+
+.app-footer .footer-logo-section {
+    max-width: 350px; /* Wider for logo and description */
+}
+
+.app-footer .logo-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.app-footer .logo-image {
+    height: 36px;
+}
+
+.app-footer .logo-text {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.app-footer .footer-tagline {
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 0.8rem;
+}
+
+.app-footer h4 {
+    color: #ffffff;
+    font-size: 1.1rem;
+    margin-bottom: 1.2rem;
+    font-weight: 600;
+}
+
+.app-footer ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.app-footer ul li {
+    margin-bottom: 0.7rem;
+}
+
+.app-footer ul li a {
+    color: #adb5bd;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.app-footer ul li a:hover {
+    color: #0d6efd;
+}
+
+.app-footer .contact-info {
+    margin-top: 1.5rem;
+}
+
+.app-footer .contact-info p {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.app-footer .contact-info a {
+    color: #adb5bd;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.app-footer .contact-info a:hover {
+    color: #0d6efd;
+}

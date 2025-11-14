@@ -1,0 +1,93 @@
+.edit-profile-header {
+  text-align: center;
+  margin: 40px 0 20px 0;
+}
+
+.profile-title {
+  color: #007bff; /* project primary blue */
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.update-text {
+  font-size: 16px;
+  color: #555; /* match secondary text color in project */
+  margin-bottom: 20px;
+}
+
+.edit-profile-container {
+  display: flex;
+  justify-content: center;
+  background-color: #ffffff; /* same as project cards */
+  color: #333; /* primary text */
+  padding: 40px 50px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05); /* subtle shadow like other cards */
+  max-width: 800px;
+  margin: 20px auto;
+  font-family: 'Inter', sans-serif; /* match project font */
+}
+
+.profile-right {
+  flex: 1;
+}
+
+.profile-form label {
+  display: block;
+  font-weight: 500;
+  margin-top: 12px;
+  color: #333;
+}
+
+.profile-form input,
+.profile-form textarea {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border: 1px solid #d1d5db; /* light grey matching project forms */
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #f9f9f9; /* subtle input bg */
+}
+
+.profile-form textarea {
+  resize: none;
+  height: 90px;
+}
+
+.button-group {
+  margin-top: 22px;
+  display: flex;
+  gap: 12px;
+}
+
+.save-btn {
+  background-color: #007bff; /* project primary button color */
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+.save-btn:hover {
+  background-color: #005fcc;
+}
+
+.cancel-btn {
+  background-color: #f1f3f5; /* subtle grey button like project secondary buttons */
+  color: #333;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+.cancel-btn:hover {
+  background-color: #d9d9d9;
+}

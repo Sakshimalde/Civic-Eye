@@ -1,0 +1,831 @@
+/* MyAssignedIssues.css - Corrected and Enhanced */
+
+/* General Setup and Variables (Based on Modern Design) */
+:root {
+    --primary-color: #2c5292; /* Deep Blue */
+    --primary-light: #5b6fa8;
+    --secondary-color: #dd6b20; /* Orange for In Progress */
+    --success-color: #38a169; /* Green for Resolved */
+    --danger-color: #e53e3e; /* Red for High Priority */
+    --text-color: #1f2937; /* Dark text */
+    --text-light: #4b5563; /* Medium-dark text */
+    --bg-light: #f5f7fa; /* Very light gray background */
+    --bg-white: #ffffff;
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.my-assigned-container {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-light); 
+    min-height: 100vh;
+}
+
+/* ------------------------------------------------------------- */
+/* --- HEADER STYLES --- */
+/* ------------------------------------------------------------- */
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 3rem;
+    background-color: var(--bg-white);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 100;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.logo-image {
+    height: 30px; 
+}
+
+.logo-text {
+    font-size: 1.5rem; 
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.nav-links a {
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease-in-out;
+    border-radius: 0.5rem;
+}
+
+.nav-links a:hover {
+    background-color: #f0f4f8;
+    color: var(--primary-color);
+}
+
+.nav-links a.active {
+    color: var(--primary-color);
+    background-color: #e2e8f0;
+    font-weight: 700;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Logout Button in Header */
+.logout-btn-header {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    width: 36px;
+    height: 36px;
+}
+.logout-btn-header:hover {
+    background-color: var(--danger-color);
+    color: var(--bg-white);
+}
+
+
+.user-info.clickable-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.75rem;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-info.clickable-profile:hover {
+    background-color: #e5e7eb;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.user-initials {
+    width: 32px;
+    height: 32px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.9375rem;
+}
+
+/* Horizontal Line Separator */
+hr {
+    border: 0;
+    height: 0;
+    border-top: 1px solid var(--border-color);
+    margin: 0;
+}
+
+/* ------------------------------------------------------------- */
+/* --- HERO & STATS --- */
+/* ------------------------------------------------------------- */
+
+.assigned-hero {
+    /* FIX: Removed background-image to prevent module not found error, 
+       relying on gradient/solid color for blue background */
+    background: linear-gradient(to right, #2c5292, #4c66e4); /* Deep blue gradient */
+    padding: 3rem 3rem 6rem; /* Extra padding for stats overlap */
+    display: flex;
+    justify-content: flex-start; 
+    align-items: flex-start;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Removed ::before as the gradient provides the background */
+
+.hero-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.hero-icon {
+    margin-bottom: 0.5rem;
+    color: #fff;
+}
+
+.assigned-hero h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.05em;
+}
+
+.assigned-hero p {
+    font-size: 1.1rem;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.assigned-stats-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    max-width: 1280px;
+    margin: -40px auto 0; /* Pull stats over the hero boundary */
+    padding: 0 3rem;
+    position: relative;
+    z-index: 10;
+}
+
+.assigned-stat-card {
+    background-color: var(--bg-white);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.assigned-stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stat-indicator {
+    width: 100%;
+    height: 4px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+}
+
+/* ------------------------------------------------------------- */
+/* --- ASSIGNMENTS LIST --- */
+/* ------------------------------------------------------------- */
+
+.assignments-section {
+    background-color: var(--bg-white);
+    border-radius: 16px;
+    padding: 2.5rem;
+    max-width: 1280px;
+    margin: 2rem auto 3rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+}
+
+.assignments-section .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem; 
+    color: var(--primary-color);
+}
+
+.assignments-section .section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.assignments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.assignment-card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    background: #f9fafb;
+}
+
+.assignment-card:hover {
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+    border-color: #d1d5db;
+}
+
+.assignment-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.assignment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.assignment-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* Badges */
+.status-badge, .priority-badge {
+    padding: 0.375rem 0.875rem;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    margin-top: 0.25rem;
+}
+
+/* Status Colors (Matching component logic: recived -> status-pending, inReview -> status-in-progress) */
+.status-pending { background-color: #f7fafc; color: #4a5568; border: 1px solid #e2e8f0; }
+.status-in-progress { background-color: #fffaf0; color: var(--secondary-color); border: 1px solid #fdebc5; }
+.status-resolved { background-color: #f0fff4; color: var(--success-color); border: 1px solid #bbf7d0; }
+
+/* Priority Colors */
+.priority-high { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.priority-medium { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.priority-low { background-color: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+
+.assignment-main p { /* This targets the description text */
+    color: var(--text-light);
+    font-size: 0.9375rem;
+    margin: 0.75rem 0;
+    line-height: 1.5;
+}
+
+.assignment-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.assignment-dates {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    margin-top: 0.5rem;
+}
+
+/* Action Buttons */
+.update-btn {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    transition: background-color 0.2s, transform 0.2s;
+    white-space: nowrap;
+    box-shadow: 0 4px 6px rgba(44, 82, 146, 0.2);
+}
+
+.update-btn:hover:not(.resolved-btn) {
+    background-color: #1a365d;
+    transform: translateY(-2px);
+}
+
+.resolved-btn {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--success-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: not-allowed;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+/* No Assignments Message */
+.no-assignments-message {
+    text-align: center;
+    padding: 40px;
+    background-color: #eaf8f4;
+    border: 1px dashed #38a169;
+    border-radius: 8px;
+    color: #38a169;
+}
+
+.no-assignments-message svg {
+    margin-bottom: 10px;
+}
+
+.no-assignments-message p {
+    margin: 0;
+    font-size: 1.1em;
+}
+
+
+/* ------------------------------------------------------------- */
+/* --- MODAL STYLES (Focusing on the provided images) --- */
+/* ------------------------------------------------------------- */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+}
+
+.modal-container {
+    background-color: var(--bg-white);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 550px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: fadeIn 0.3s ease-out;
+    display: flex; 
+    flex-direction: column;
+}
+
+/* Modal Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-shrink: 0;
+    background: var(--bg-white);
+    z-index: 11;
+}
+
+.modal-title-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.modal-title-row h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.modal-title-icon {
+    color: var(--primary-color);
+}
+
+.modal-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.modal-body-wrapper { 
+    flex-grow: 1; 
+    overflow-y: auto; 
+    /* Remove padding here, let the sections handle it */
+}
+
+/* Modal Sections */
+.modal-section {
+    padding: 1.5rem; 
+    border-bottom: 1px solid var(--border-color); 
+}
+
+/* Corrected Custom Backgrounds for Sections based on image */
+
+/* Top Section (Issue Information - image_3a0725.png) */
+.issue-info-section { 
+    background-color: var(--bg-white); /* Keep white for info section in the provided design */
+    padding-bottom: 0; /* Align with the next section */
+}
+.issue-info-section .section-title-icon {
+    color: #6b7280; /* Neutral icon color for info section */
+}
+
+/* Middle Section (Status Update - image_3a047c.png) */
+.status-update-section { 
+    background-color: var(--bg-white); 
+    border-bottom: none; /* No border for the middle section on the image */
+    padding-top: 0; /* Remove top padding for a tighter fit after info */
+}
+.status-update-section .section-title-icon {
+    display: none; /* Hidden on the actual image */
+}
+
+
+/* Bottom Section (Documentation - image_3a047c.png) */
+.documentation-section { 
+    background-color: #f3f9f3; /* Light Green for Docs - Custom shade to match image */
+    border-top: 1px solid #d1e9d1; /* Border above the section */
+    border-radius: 0 0 12px 12px;
+}
+.documentation-section .section-title-icon svg {
+    color: var(--success-color); /* Green icon color */
+}
+
+
+.section-title-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.section-title-icon h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.section-title-icon svg {
+    color: var(--primary-color);
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 0 1.5rem; /* Re-add the horizontal padding removed from the section */
+}
+
+.info-field.full-width { grid-column: 1 / -1; }
+
+.info-field label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-size: 1rem;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+/* Form Fields */
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.form-field label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.form-select, .form-textarea, .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.2s;
+    background: white;
+    box-sizing: border-box;
+    -webkit-appearance: none; /* For select arrow */
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Specific styling for the New Status select to show a dropdown arrow */
+.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25em 1.25em;
+    padding-right: 2.5rem;
+}
+
+
+.form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(44, 82, 146, 0.1);
+}
+
+.form-textarea { resize: vertical; min-height: 100px; }
+
+/* --- Custom File Input Styling (To Match Image) --- */
+.form-file-input {
+    /* Hide default browser file input elements */
+    opacity: 0;
+    position: absolute;
+    width: 0.1px;
+    height: 0.1px;
+    overflow: hidden;
+    z-index: -1;
+}
+
+/* Container mimicking the input box */
+.form-field > input[type="file"] + label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 400; /* Lighter font weight for the input value */
+    color: #4b5563;
+    box-sizing: border-box;
+    position: relative;
+    /* Ensure only the label is styled, the image shows a simple input field with "Choose File" inside */
+}
+
+/* This is the part that creates the visual effect shown in the image */
+.form-field > input[type="file"] + label::before {
+    content: 'Choose File';
+    background-color: #f3f4f6; /* Button background */
+    color: var(--text-color);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin-right: 1rem;
+    font-weight: 600;
+    border: 1px solid #d1d5db;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.form-field > input[type="file"] + label::after {
+    content: 'No file chosen'; /* Mimic the grey text */
+    color: #9ca3af;
+    font-weight: 400;
+}
+/* END Custom File Input Styling */
+
+.form-field small {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    line-height: 1.4;
+}
+
+/* Modal Actions (Footer) */
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+    background: var(--bg-white);
+    justify-content: flex-end;
+    border-radius: 0 0 12px 12px;
+}
+
+.btn-submit, .btn-cancel {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 150px;
+}
+
+.btn-submit {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+}
+
+.btn-submit:hover:not(:disabled) { background-color: #1a365d; }
+.btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn-cancel {
+    background-color: #e5e7eb;
+    color: var(--text-color);
+    border: none;
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background-color: #d1d5db;
+}
+
+/* Loading State and Animation */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: var(--bg-light);
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+.loading-spinner, .spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* ------------------------------------------------------------- */
+/* --- RESPONSIVE ADJUSTMENTS --- */
+/* ------------------------------------------------------------- */
+
+@media (max-width: 1280px) {
+    .header-top, .assigned-stats-container, .assignments-section {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .assigned-stats-container {
+        grid-template-columns: 1fr;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-top {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem 1.5rem;
+        gap: 1rem;
+    }
+    
+    .nav-links { display: none; }
+
+    .header-right {
+        align-self: flex-end;
+        margin-top: -3rem; 
+    }
+
+    .assigned-hero {
+        padding: 2rem 1.5rem 4rem; 
+    }
+
+    .assignments-section {
+        margin: 2rem 1.5rem 3rem;
+        padding: 1.5rem;
+    }
+
+    .assignment-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .update-btn, .resolved-btn {
+        width: 100%;
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
+
+    .info-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+    .user-name { display: none; }
+    
+    .modal-actions { 
+        flex-direction: column; 
+        gap: 0.75rem;
+    }
+    .btn-submit, .btn-cancel {
+        width: 100%;
+    }
+}

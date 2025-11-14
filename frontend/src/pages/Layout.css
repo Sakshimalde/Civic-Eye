@@ -1,0 +1,126 @@
+/* --- Global Layout Styles --- */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex-grow: 1; /* This is the key for the sticky footer */
+  padding: 2rem;
+  background-color: #f8f9fa; /* A light background for the page content area */
+}
+
+/* --- Shared Header Styles --- */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #dee2e6;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-image {
+  height: 40px;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #212529;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #495057;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.nav-links a:hover,
+.nav-links a.active { /* Use NavLink for active class */
+  color: #0d6efd;
+  border-bottom-color: #0d6efd;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  padding: 0.5rem;
+  border-radius: 50px;
+  transition: background-color 0.2s;
+}
+
+.profile-link:hover {
+  background-color: #f1f3f5;
+}
+
+.user-initials {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #0d6efd;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-name {
+  color: #212529;
+  font-weight: 500;
+}
+
+.logout-btn-header {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.logout-btn-header:hover {
+  background-color: #f8d7da;
+  color: #dc3545;
+}
+
+/* --- Shared Footer Styles --- */
+.footer {
+  background-color: #212529;
+  color: #adb5bd;
+  padding: 2rem;
+  text-align: center;
+  flex-shrink: 0; /* Prevents the footer from shrinking */
+}
