@@ -21,7 +21,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/frontend/dist/index.html"
+      "destination": "/frontend/build/index.html"
     }
   ],
   "buildCommand": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend"
