@@ -10,11 +10,12 @@
     "tailwindcss": "^4.1.14",
     "vite": "^5.4.21"
   },
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
+"scripts": {
+  "dev": "vite",
+  "build": "CI=false vite build",
+  "preview": "vite preview"
+}
+,
   "name": "civiceye",
   "version": "1.0.0",
   "main": "index.js",
