@@ -5,22 +5,18 @@ import cookieParser from "cookie-parser";
 const app = express();
 
 /* =========================
-   ✅ CORS CONFIG (FIXED)
+   ✅ CORS CONFIG (FINAL)
    ========================= */
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3002",
-  "https://civic-32he23vym-sakshimalde1824-gmailcoms-projects.vercel.app"
-];
-
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (Postman, server-to-server)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      if (origin.startsWith("http://localhost")) {
+        return callback(null, true);
+      }
+
+      if (origin.endsWith(".vercel.app")) {
         return callback(null, true);
       }
 
