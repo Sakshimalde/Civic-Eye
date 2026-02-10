@@ -6,9 +6,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Login.css';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 const Login = () => {
   const navigate = useNavigate();
   const { signIn } = useAuth();
+
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -23,7 +26,7 @@ const Login = () => {
     e.preventDefault();
     try {
       const res = await axios.post(
-        'http://localhost:3000/api/v1/users/login',
+        `${BACKEND_URL}/api/v1/users/login`,
         form,
         { withCredentials: true }
       );
@@ -34,7 +37,7 @@ const Login = () => {
 
       alert('Login Successful!');
 
-      // 🔹 Redirect based on user role
+      // Redirect based on role
       if (user.role === 'volunteer') {
         navigate('/volunteer', { state: { userType: 'volunteer' } });
       } else if (user.role === 'admin') {
@@ -47,20 +50,20 @@ const Login = () => {
     }
   };
 
+  // Forgot password
   const handleForgotPassword = () => {
-  navigate("/forgot-password"); // your Forgot Password route
-};
+    navigate('/forgot-password');
+  };
+
   // Google OAuth login
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:3000/api/v1/auth/google';
+    window.location.href = `${BACKEND_URL}/api/v1/auth/google`;
   };
 
   return (
     <div className="login-page-container">
-      {/* Header Section */}
+      {/* Header */}
       <header className="header-top">
-        
-
         <nav className="nav-links">
           <Link to="/">Home</Link>
           <Link to="/help">Help</Link>
@@ -77,16 +80,15 @@ const Login = () => {
         </div>
       </header>
 
-      {/* Main Login Area */}
+      {/* Main Content */}
       <div className="login-main-content">
-        {/* Left Panel - Login Form */}
+        {/* Left Panel */}
         <div className="login-panel left-panel">
           <div className="form-card">
             <h2 className="welcome-title">Sign In</h2>
-            <p className="welcome-subtitle"></p>
 
             <form onSubmit={handleSubmit}>
-              {/* Email Field */}
+              {/* Email */}
               <div className="form-field-container">
                 <label className="form-label">Email Address</label>
                 <div className="input-group">
@@ -103,7 +105,7 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Password Field */}
+              {/* Password */}
               <div className="form-field-container">
                 <label className="form-label">Password</label>
                 <div className="input-group">
@@ -127,22 +129,23 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Remember & Forgot Password */}
+              {/* Remember & Forgot */}
               <div className="flex-row justify-between align-center mb-4">
                 <label className="checkbox-label">
                   <input type="checkbox" className="checkbox-input" />
                   Remember me
                 </label>
-                <button type="button"
-        className="link-button"
-  onClick={handleForgotPassword}
->
-  Forgot Password?
-</button>
 
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={handleForgotPassword}
+                >
+                  Forgot Password?
+                </button>
               </div>
 
-              {/* Submit Button */}
+              {/* Submit */}
               <button type="submit" className="login-btn">
                 Sign In
               </button>
@@ -162,31 +165,21 @@ const Login = () => {
                 Sign in with Google
               </button>
 
-              {/* Signup Link */}
+              {/* Signup */}
               <div className="create-account-link-container">
-                Don't have an account? <Link to="/signup">Create Account</Link>
+                Don&apos;t have an account? <Link to="/signup">Create Account</Link>
               </div>
             </form>
           </div>
         </div>
 
-        {/* Right Panel - Info Section */}
+        {/* Right Panel */}
         <div className="login-panel right-panel">
           <div className="right-panel-content">
             <h2 className="right-panel-title">Welcome Back!</h2>
             <p className="right-panel-subtitle">
               Report civic issues, track progress, and help build a better community together.
             </p>
-            <div className="stats-container">
-              <div className="stat-item">
-                <div className="stat-value"></div>
-                <div className="stat-label"></div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-value"></div>
-                <div className="stat-label"></div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
