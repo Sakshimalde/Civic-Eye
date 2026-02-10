@@ -17,7 +17,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (Postman, server-to-server)
+      // allow requests with no origin (Postman, server-to-server)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
@@ -31,9 +31,6 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
-
-/* 🔥 REQUIRED for browser preflight requests */
-app.options("*", cors());
 
 /* =========================
    ✅ MIDDLEWARES
