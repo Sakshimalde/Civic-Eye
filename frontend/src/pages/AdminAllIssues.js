@@ -8,8 +8,8 @@ import {
     User as UserIcon, Loader2 
 } from 'lucide-react';
 import './AdminAllIssues.css';
-
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API_BASE_URL =  `${BACKEND_URL}/api/v1`; 
 
 // List of standard department strings used during initial complaint registration
 const DEPARTMENTS = [

@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 // All necessary icons imported
 import { User, Mail, MapPin, Briefcase, Award, Heart, CheckCircle, LogOut, Phone, Globe, ArrowRight, Edit3 } from 'lucide-react'; 
 import './ProfilePage.css';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
 
 const Profile = () => {
     const { user, signOut } = useAuth();
@@ -27,7 +29,7 @@ const Profile = () => {
     }, [user, navigate]);
 
     const handleLogout = () => {
-        axios.post('http://localhost:3000/api/v1/users/logout', {}, { withCredentials: true })
+        axios.post(`${BACKEND_URL}/api/v1/users/logout`, {}, { withCredentials: true })
             .catch(() => {})
             .finally(() => {
                 signOut();

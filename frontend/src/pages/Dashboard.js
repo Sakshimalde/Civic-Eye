@@ -4,8 +4,8 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { PlusCircle, MapPin, FileText, ArrowRight, BarChart3, Users, Mail, Phone, Globe, Trash2, Lightbulb, Droplet, Wrench } from 'lucide-react';
 import './Dashboard.css';
-
-const API_BASE_URL = 'http://localhost:3000/api/v1'; // Use the base URL for consistency
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API_BASE_URL =  `${BACKEND_URL}/api/v1`; // Use the base URL for consistency
 
 // --- Utility Functions (Reusing/Adapting logic from IssuesBrowser) ---
 

@@ -4,8 +4,8 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { Search, Filter, MapPin, ArrowRight, BarChart3, Users, FileText, PlusCircle, Heart, MessageSquare, Eye, Clock, ChevronsDown, ThumbsDown, Edit, Save } from 'lucide-react'; 
 import './IssuesBrowser.css';
-
-const API_BASE_URL = 'http://localhost:3000/api/v1'; // Define API URL
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API_BASE_URL =  `${BACKEND_URL}/api/v1`; // Define API URL
 
 // --- Time utility ---
 const getRelativeTime = (isoDateString) => {

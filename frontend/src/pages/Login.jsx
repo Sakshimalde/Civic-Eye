@@ -7,8 +7,6 @@ import { useAuth } from '../contexts/AuthContext';
 import './Login.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-console.log("BACKEND URL =", process.env.REACT_APP_BACKEND_URL);
-
 
 const Login = () => {
   const navigate = useNavigate();

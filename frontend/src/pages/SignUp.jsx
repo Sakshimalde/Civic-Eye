@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import './SignUp.css';
 import { ArrowRight } from "lucide-react";
-
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const SignUp = () => {
     const navigate = useNavigate();
@@ -101,7 +101,7 @@ const SignUp = () => {
             console.log('Submitting formData:', formData);
 
             const res = await axios.post(
-                'http://localhost:3000/api/v1/users/register',
+                `${BACKEND_URL}/api/v1/users/register`,
                 formData,
                 { withCredentials: true }
             );

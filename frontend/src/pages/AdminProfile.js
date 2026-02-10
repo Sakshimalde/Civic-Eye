@@ -11,7 +11,7 @@ import {
     LayoutDashboard, AlertCircle, Users, FileText, Clock, Loader2 
 } from 'lucide-react'; 
 import './ProfilePage.css'; // Your custom CSS file
-
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const AdminProfile = () => {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
@@ -38,7 +38,7 @@ const AdminProfile = () => {
     }, [user, navigate]);
 
     const handleLogout = () => {
-        axios.post('http://localhost:3000/api/v1/users/logout', {}, { withCredentials: true })
+        axios.post(`${BACKEND_URL}/api/v1/users/logout`, {}, { withCredentials: true })
             .catch(() => {})
             .finally(() => {
                 signOut();

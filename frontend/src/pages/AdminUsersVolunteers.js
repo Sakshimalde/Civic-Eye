@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import './AdminUsersVolunteers.css'; // Assuming this CSS file exists
 
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API_BASE_URL =  `${BACKEND_URL}/api/v1`; 
 
 // --- API Fetcher (Defined locally) ---
 const fetchAllUsersAndStats = async () => {

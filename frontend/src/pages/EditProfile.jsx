@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Mail, Phone, MapPin, FileText, ArrowLeft, Save } from 'lucide-react';
 import './EditProfile.css';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const EditProfile = () => {
     const { user, updateUser } = useAuth();
@@ -28,7 +29,7 @@ const EditProfile = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:3000/api/v1/users/profile', {
+            const response = await fetch(`${BACKEND_URL}/api/v1/users/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

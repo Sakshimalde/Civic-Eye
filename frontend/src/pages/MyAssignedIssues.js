@@ -6,8 +6,9 @@ import {
     MapPin, Calendar, User, LogOut, Edit, Award, X, CheckCircle, Clock, Loader2, FileText
 } from 'lucide-react';
 import './MyAssignedIssues.css'; 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+    const API_BASE_URL =  `${BACKEND_URL}/api/v1`; 
 
-const API_BASE_URL = 'http://localhost:3000/api/v1';
 
 const MyAssignedIssues = () => {
     const navigate = useNavigate();

@@ -40,7 +40,8 @@ const UserReportIssue = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
-    const API_BASE_URL = 'http://localhost:3000/api/v1'; // Assuming default server config
+    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+    const API_BASE_URL =  `${BACKEND_URL}/api/v1`; // Assuming default server config
 
     const categories = useMemo(() => [
         'Select issue category',
