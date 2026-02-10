@@ -38,28 +38,28 @@ const AdminDashboard = () => {
   const stats = [
     { 
       label: 'Total Issues', 
-      value: '156', 
+      value: '1', 
       icon: AlertCircle, 
       color: '#f933b7ff',
       bgColor: '#dbeafe'
     },
     { 
       label: 'Pending Review', 
-      value: '23', 
+      value: '1', 
       icon: Clock, 
       color: '#f97316',
       bgColor: '#ffedd5'
     },
     { 
       label: 'Resolved', 
-      value: '92', 
+      value: '0', 
       icon: CheckCircle, 
       color: '#22c55e',
       bgColor: '#dcfce7'
     },
     { 
       label: 'Active Users', 
-      value: '1247', 
+      value: '4', 
       icon: Users, 
       color: '#5555f7ff',
       bgColor: '#f3e8ff'
@@ -70,19 +70,19 @@ const AdminDashboard = () => {
   const systemMetrics = [
     {
       label: 'Resolution Rate',
-      value: '89%',
+      value: '1',
       icon: TrendingUp,
       iconColor: '#22c55e'
     },
     {
       label: 'Avg Response',
-      value: '2.3h',
+      value: '1',
       icon: Timer,
       iconColor: '#3b82f6'
     },
     {
       label: 'Satisfaction',
-      value: '4.7/5',
+      value: '4',
       icon: ThumbsUp,
       iconColor: '#f59e0b'
     }

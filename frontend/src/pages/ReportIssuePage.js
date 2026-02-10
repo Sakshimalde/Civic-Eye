@@ -62,7 +62,6 @@ const UserReportIssue = () => {
     // Define volunteers separately to manage the optional field
     const volunteers = useMemo(() => [
         'Select a volunteer (optional)',
-        'Community Volunteer Group A',
         'Neighborhood Watch Team',
         'Local Cleanup Crew',
         'Individual Volunteer'
@@ -512,7 +511,7 @@ const handleSubmit = async (e) => {
                                 </div>
                             </div>
 
-                            {/* Volunteer Assignment (Optional Field) */}
+                            {/* Volunteer Assignment (Optional Field)
                             <div className="form-section">
                                 <div className="form-group">
                                     <label className="form-label">
@@ -531,7 +530,7 @@ const handleSubmit = async (e) => {
                                         ))}
                                     </select>
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* Priority Section (Optional Field) */}
                             <div className="form-section">

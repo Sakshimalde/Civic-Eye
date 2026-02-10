@@ -83,11 +83,11 @@ const UserBrowseIssue = () => {
     ], []);
 
     const communityImpact = {
-        issuesResolved: '89+',
-        responseTime: '2.3 days avg',
-        communityScore: '95%',
-        activeUsers: '1.2k',
-        totalReports: '2.8k'
+        issuesResolved: '0',
+        responseTime: '2 days avg',
+        communityScore: '%',
+        activeUsers: '1',
+        totalReports: '2'
     };
 
     const fetchIssues = useCallback(async () => {
