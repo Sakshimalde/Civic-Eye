@@ -150,21 +150,23 @@ const Dashboard = () => {
     
     // --- API Fetch Function ---
     const fetchComplaints = useCallback(async () => {
-        if (!user) return; // Should already be guarded by the useEffect below
-
+        if (!user) return;
+    
         setLoading(true);
         try {
-            // NOTE: We fetch ALL complaints to perform local aggregation for the dashboard stats
+            const token = localStorage.getItem("accessToken");
+    
             const res = await axios.get(`${API_BASE_URL}/complaints/all`, {
-                withCredentials: true,
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
-            
-            // Simulate adding mock data (votes/views) since your current backend only returns basic complaint data
+    
             const enrichedData = res.data.data.map(comp => ({
                 ...comp,
                 mockVotes: Math.floor(Math.random() * 30),
             }));
-
+    
             setAllComplaints(enrichedData);
         } catch (err) {
             console.error("Failed to fetch complaints:", err.response?.data || err.message);
@@ -173,6 +175,7 @@ const Dashboard = () => {
             setLoading(false);
         }
     }, [user]);
+    
 
     // --- Authentication and Data Fetch Effects ---
 
