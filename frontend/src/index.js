@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import './axiosConfig'; 
 import App from "./App";
 import { AuthProvider } from "./contexts/AuthContext";
 import axios from "axios";
