@@ -93,13 +93,76 @@ const Dashboard = () => {
             'Other': { count: 0, icon: <FileText size={24} /> },
         };
 
-       
+        allComplaints.forEach(comp => {
+            // Normalise status: lowercase + trim to handle any spelling variation
+            const status = (comp.status || '').toLowerCase().trim();
 
+            if (status === 'resolved') {
+                totals.resolvedIssues++;
+            } else if (status === 'recived' || status === 'received') {
+                totals.pendingIssues++;
+                totals.activeIssues++;
+            } else if (status === 'inreview' || status === 'in review') {
+                totals.activeIssues++;
+            }
+        });
+
+        // Get the top 3 recent reports (sorted by creation time)
+        const sortedReports = [...allComplaints]
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 3);
+
+        const mappedRecentReports = sortedReports.map(comp => ({
+            title: comp.title,
+            // Use the first address entry or fallback
+            location: comp.address?.[0] || 'Unknown Location', 
+            // Mock data for now, actual votes should come from backend aggregation
+            votes: comp.mockVotes || Math.floor(Math.random() * 30), 
+            time: getRelativeTime(comp.createdAt),
+            status: comp.status === 'recived' ? 'Pending' : comp.status === 'inReview' ? 'In Progress' : comp.status === 'resolved' ? 'Resolved' : 'Pending',
+        }));
+        
+        // Convert category map back to array format for rendering
+        const finalCategories = Object.keys(categoryCounts)
+            .filter(cat => categoryCounts[cat].count > 0 || cat !== 'Other') // Hide 'Other' if count is zero
+            .map(cat => ({
+                category: cat,
+                count: categoryCounts[cat].count,
+                icon: categoryCounts[cat].icon,
+            }));
+
+        // Avg response time for resolved issues
+        const resolvedWithDates = allComplaints.filter(
+            c => (c.status || '').toLowerCase() === 'resolved' && c.createdAt && c.updatedAt
+        );
+        let avgResponseTime = 'N/A';
+        if (resolvedWithDates.length > 0) {
+            const totalMs = resolvedWithDates.reduce((sum, c) =>
+                sum + (new Date(c.updatedAt) - new Date(c.createdAt)), 0);
+            const avgDays = totalMs / resolvedWithDates.length / (1000 * 60 * 60 * 24);
+            avgResponseTime = avgDays < 1
+                ? `${Math.round(avgDays * 24)} hrs avg`
+                : `${avgDays.toFixed(1)} days avg`;
+        }
+
+        // Community score = resolved / total as %
+        const communityScore = totals.totalReports > 0
+            ? `${Math.round((totals.resolvedIssues / totals.totalReports) * 100)}%`
+            : 'N/A';
+
+        return {
+            ...totals,
+            avgResponseTime,
+            communityScore,
+            recentReports: mappedRecentReports,
+            issueCategories: finalCategories,
+        };
+    }, [allComplaints]);
     
     
     // --- API Fetch Function ---
     const fetchComplaints = useCallback(async () => {
-        if (!user) return;
+        if (!user) return; // Should already be guarded by the useEffect below
 
         setLoading(true);
         try {
@@ -107,34 +170,39 @@ const Dashboard = () => {
                 withCredentials: true,
             });
 
-            // Safely extract the array regardless of response envelope shape:
-            // { data: [...] }  OR  { data: { data: [...] } }  OR  bare array
-            const raw = res.data;
-            const complaints = Array.isArray(raw)
-                ? raw
-                : Array.isArray(raw?.data)
-                    ? raw.data
-                    : Array.isArray(raw?.data?.data)
-                        ? raw.data.data
-                        : [];
+            // Log raw shape so we can debug extraction
+            console.log('RAW API response keys:', Object.keys(res.data || {}));
+            console.log('RAW res.data (first 300 chars):', JSON.stringify(res.data).slice(0, 300));
 
-            console.log(`Dashboard: fetched ${complaints.length} complaints`);
+            // Safely extract array — handles every common envelope shape
+            const raw = res.data;
+            let complaints = [];
+            if (Array.isArray(raw)) {
+                complaints = raw;
+            } else if (Array.isArray(raw?.data)) {
+                complaints = raw.data;
+            } else if (Array.isArray(raw?.data?.data)) {
+                complaints = raw.data.data;
+            } else if (Array.isArray(raw?.complaints)) {
+                complaints = raw.complaints;
+            } else if (Array.isArray(raw?.result)) {
+                complaints = raw.result;
+            } else {
+                // Last resort: find the first array value in the response object
+                const firstArray = Object.values(raw || {}).find(v => Array.isArray(v));
+                if (firstArray) complaints = firstArray;
+            }
+
+            console.log(`✅ Extracted ${complaints.length} complaints`);
             if (complaints.length > 0) {
-                console.log('Dashboard: first complaint sample:', {
-                    status: complaints[0].status,
-                    title: complaints[0].title,
-                    _id: complaints[0]._id,
-                });
-                // Log status breakdown so you can see the counts
-                const statusCounts = complaints.reduce((acc, c) => {
+                console.log('First complaint:', complaints[0]);
+                const statusBreakdown = complaints.reduce((acc, c) => {
                     acc[c.status] = (acc[c.status] || 0) + 1;
                     return acc;
                 }, {});
-                console.log('Dashboard: status breakdown:', statusCounts);
-            } else {
-                console.warn('Dashboard: API returned 0 complaints — check if backend filters by userId');
-                console.log('Dashboard: raw API response was:', res.data);
+                console.log('Status breakdown:', statusBreakdown);
             }
+
             setAllComplaints(complaints);
         } catch (err) {
             console.error("Failed to fetch complaints:", err.response?.data || err.message);
@@ -162,82 +230,6 @@ const Dashboard = () => {
              navigate('/login');
         }
     }, [user, authChecked, navigate, fetchComplaints]);
-
-    allComplaints.forEach(comp => {
-        // Normalise to lowercase+trimmed so minor spelling/case differences don't break counts
-        const status = (comp.status || '').toLowerCase().trim();
-
-        // "resolved" → Resolved Issues
-        if (status === 'resolved') {
-            console.log(totals.resolvedIssues++);
-
-        }
-        // "recived" or "received" → Pending Issues
-        else if (status === 'recived' || status === 'received') {
-            console.log(totals.pendingIssues++);
-            console.log(totals.activeIssues++);
-        }
-        // "inreview" / "in review" / "inReview" → Active Issues (in review)
-        else if (status === 'inreview' || status === 'in review') {
-            totals.activeIssues++;
-        }
-    });
-    console.log("FINAL TOTALS:", totals);
-console.log("UI VALUES:", totalReports, activeIssues, resolvedIssues, pendingIssues);
-
-
-    // Get the top 3 recent reports (sorted by creation time)
-    const sortedReports = [...allComplaints]
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 3);
-
-    const mappedRecentReports = sortedReports.map(comp => ({
-        title: comp.title,
-        // Use the first address entry or fallback
-        location: comp.address?.[0] || 'Unknown Location', 
-        // Mock data for now, actual votes should come from backend aggregation
-        votes: comp.mockVotes || Math.floor(Math.random() * 30), 
-        time: getRelativeTime(comp.createdAt),
-        status: comp.status === 'recived' ? 'Pending' : comp.status === 'inReview' ? 'In Progress' : comp.status === 'resolved' ? 'Resolved' : 'Pending',
-    }));
-    
-    // Convert category map back to array format for rendering
-    const finalCategories = Object.keys(categoryCounts)
-        .filter(cat => categoryCounts[cat].count > 0 || cat !== 'Other') // Hide 'Other' if count is zero
-        .map(cat => ({
-            category: cat,
-            count: categoryCounts[cat].count,
-            icon: categoryCounts[cat].icon,
-        }));
-
-    // --- Avg response time: days between createdAt and updatedAt for resolved complaints ---
-    const resolvedWithDates = allComplaints.filter(
-        c => c.status === 'resolved' && c.createdAt && c.updatedAt
-    );
-    let avgResponseTime = 'N/A';
-    if (resolvedWithDates.length > 0) {
-        const totalMs = resolvedWithDates.reduce((sum, c) => {
-            return sum + (new Date(c.updatedAt) - new Date(c.createdAt));
-        }, 0);
-        const avgDays = totalMs / resolvedWithDates.length / (1000 * 60 * 60 * 24);
-        avgResponseTime = avgDays < 1
-            ? `${Math.round(avgDays * 24)} hrs avg`
-            : `${avgDays.toFixed(1)} days avg`;
-    }
-
-    // --- Community score: resolution rate as a percentage ---
-    const communityScore = totals.totalReports > 0
-        ? `${Math.round((totals.resolvedIssues / totals.totalReports) * 100)}%`
-        : 'N/A';
-
-    return {
-        ...totals,
-        avgResponseTime,
-        communityScore,
-        recentReports: mappedRecentReports,
-        issueCategories: finalCategories,
-    };
-}, [allComplaints]);
 
 
     const handleLogout = () => {
@@ -386,6 +378,7 @@ console.log("UI VALUES:", totalReports, activeIssues, resolvedIssues, pendingIss
                             <div className="impact-stats">
                                 <div className="impact-stat-item">
                                     <span>Issues Resolved</span>
+                                    {/* Using resolvedIssues count for dynamic data */}
                                     <strong>{resolvedIssues} <small>total</small></strong>
                                 </div>
                                 <div className="impact-stat-item">
