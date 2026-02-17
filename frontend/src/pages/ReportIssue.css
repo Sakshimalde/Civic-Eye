@@ -1117,3 +1117,25 @@
 .map-modal {
     z-index: 10000;
 }
+/* Side-by-side upload options */
+.upload-options-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.upload-options-row .photo-upload-label {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Distinct style for the camera button */
+.camera-label {
+    background-color: #f0f7ff;          /* light blue tint */
+    border-color: #3b82f6 !important;   /* blue border */
+    color: #1d4ed8;
+}
+
+.camera-label:hover {
+    background-color: #dbeafe;
+}

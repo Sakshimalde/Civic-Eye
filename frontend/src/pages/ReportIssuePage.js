@@ -562,60 +562,83 @@ const handleSubmit = async (e) => {
                             </div>
 
                             {/* Photo Upload */}
-                            <div className="form-section">
-                                <div className="form-group">
-                                    <label className="form-label">
-                                        <Camera size={16} />
-                                        Add Photo Evidence
-                                    </label>
-                                    <div className="photo-upload-container">
-                                        <input
-                                            type="file"
-                                            id="photo-upload"
-                                            ref={fileInputRef}
-                                            accept="image/jpeg,image/png,image/jpg"
-                                            onChange={handleFileChange}
-                                            className="photo-input"
-                                        />
+<div className="form-section">
+    <div className="form-group">
+        <label className="form-label">
+            <Camera size={16} />
+            Add Photo Evidence
+        </label>
+        <div className="photo-upload-container">
+            <input
+                type="file"
+                id="photo-upload"
+                ref={fileInputRef}
+                accept="image/jpeg,image/png,image/jpg"
+                onChange={handleFileChange}
+                className="photo-input"
+            />
+            {/* NEW: Hidden camera input */}
+            <input
+                type="file"
+                id="camera-capture"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileChange}
+                className="photo-input"
+                style={{ display: 'none' }}
+            />
 
-                                        {formData.photoPreview ? (
-                                            <div className="photo-preview-active">
-                                                <div className="preview-header">
-                                                    <span>Photo Preview</span>
-                                                    <button
-                                                        type="button"
-                                                        className="remove-photo-btn"
-                                                        onClick={removePhoto}
-                                                    >
-                                                        <X size={16} />
-                                                    </button>
-                                                </div>
-                                                <div className="preview-image-container">
-                                                    <img
-                                                        src={formData.photoPreview}
-                                                        alt="Preview"
-                                                        className="preview-image"
-                                                    />
-                                                </div>
-                                                <div className="preview-info">
-                                                    <span className="file-name">{formData.photo.name}</span>
-                                                    <span className="file-size">
-                                                        {(formData.photo.size / 1024 / 1024).toFixed(2)} MB
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <label htmlFor="photo-upload" className="photo-upload-label">
-                                                <Camera size={32} />
-                                                <div className="upload-text">
-                                                    <strong>Choose Photo</strong>
-                                                    <span>JPG, PNG up to 10MB • Photos help get faster responses</span>
-                                                </div>
-                                            </label>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+            {formData.photoPreview ? (
+                <div className="photo-preview-active">
+                    <div className="preview-header">
+                        <span>Photo Preview</span>
+                        <button
+                            type="button"
+                            className="remove-photo-btn"
+                            onClick={removePhoto}
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                    <div className="preview-image-container">
+                        <img
+                            src={formData.photoPreview}
+                            alt="Preview"
+                            className="preview-image"
+                        />
+                    </div>
+                    <div className="preview-info">
+                        <span className="file-name">{formData.photo.name}</span>
+                        <span className="file-size">
+                            {(formData.photo.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                    </div>
+                </div>
+            ) : (
+                <div className="upload-options-row">
+                    {/* Upload from gallery */}
+                    <label htmlFor="photo-upload" className="photo-upload-label">
+                        <Camera size={28} />
+                        <div className="upload-text">
+                            <strong>Choose Photo</strong>
+                            <span>From gallery</span>
+                        </div>
+                    </label>
+
+                    {/* NEW: Take photo with camera */}
+                    <label htmlFor="camera-capture" className="photo-upload-label camera-label">
+                        <Camera size={28} />
+                        <div className="upload-text">
+                            <strong>Take Photo</strong>
+                            <span>Use camera</span>
+                        </div>
+                    </label>
+                </div>
+            )}
+        </div>
+        <div className="input-hint">JPG, PNG up to 10MB • Photos help get faster responses</div>
+    </div>
+</div>
 
                             {/* Submit Button */}
                             <div className="form-actions">
