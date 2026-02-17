@@ -168,8 +168,7 @@ console.log("UI VALUES:", totalReports, activeIssues, resolvedIssues, pendingIss
             issueCategories: finalCategories,
         };
     }, [allComplaints]);
-    console.log("FINAL TOTALS:", totals);
-console.log("UI VALUES:", totalReports, activeIssues, resolvedIssues, pendingIssues);
+    
 
     
     
