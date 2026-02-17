@@ -78,7 +78,7 @@ const Dashboard = () => {
     // --- Dynamic Dashboard Data Calculation using useMemo ---
     
     // 1. Complaint Aggregation and Recent Reports
-    const { totalReports, activeIssues, resolvedIssues, pendingIssues, recentReports, issueCategories } = useMemo(() => {
+    const { totalReports, activeIssues, resolvedIssues, pendingIssues, avgResponseTime, communityScore, recentReports, issueCategories } = useMemo(() => {
         let totals = {
             totalReports: allComplaints.length,
             activeIssues: 0,
@@ -116,6 +116,27 @@ const Dashboard = () => {
             }
         });
 
+        // --- Compute avg response time from resolved complaints ---
+        // Uses updatedAt as the resolution timestamp (when status last changed to resolved)
+        const resolvedWithDates = allComplaints.filter(
+            c => c.status === 'resolved' && c.createdAt && c.updatedAt
+        );
+        let avgResponseTime = 'N/A';
+        if (resolvedWithDates.length > 0) {
+            const totalMs = resolvedWithDates.reduce((sum, c) => {
+                return sum + (new Date(c.updatedAt) - new Date(c.createdAt));
+            }, 0);
+            const avgDays = totalMs / resolvedWithDates.length / (1000 * 60 * 60 * 24);
+            avgResponseTime = avgDays < 1
+                ? `${Math.round(avgDays * 24)} hrs avg`
+                : `${avgDays.toFixed(1)} days avg`;
+        }
+
+        // --- Compute community score = resolution rate as a percentage ---
+        const communityScore = totals.totalReports > 0
+            ? `${Math.round((totals.resolvedIssues / totals.totalReports) * 100)}%`
+            : 'N/A';
+
         // Get the top 3 recent reports (sorted by creation time)
         const sortedReports = [...allComplaints]
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -123,17 +144,15 @@ const Dashboard = () => {
 
         const mappedRecentReports = sortedReports.map(comp => ({
             title: comp.title,
-            // Use the first address entry or fallback
             location: comp.address?.[0] || 'Unknown Location', 
-            // Mock data for now, actual votes should come from backend aggregation
-            votes: comp.mockVotes || Math.floor(Math.random() * 30), 
+            votes: comp.mockVotes || 0, 
             time: getRelativeTime(comp.createdAt),
             status: comp.status === 'recived' ? 'Pending' : comp.status === 'inReview' ? 'In Progress' : comp.status === 'resolved' ? 'Resolved' : 'Pending',
         }));
         
         // Convert category map back to array format for rendering
         const finalCategories = Object.keys(categoryCounts)
-            .filter(cat => categoryCounts[cat].count > 0 || cat !== 'Other') // Hide 'Other' if count is zero
+            .filter(cat => categoryCounts[cat].count > 0 || cat !== 'Other')
             .map(cat => ({
                 category: cat,
                 count: categoryCounts[cat].count,
@@ -142,6 +161,8 @@ const Dashboard = () => {
 
         return {
             ...totals,
+            avgResponseTime,
+            communityScore,
             recentReports: mappedRecentReports,
             issueCategories: finalCategories,
         };
@@ -150,20 +171,21 @@ const Dashboard = () => {
     
     // --- API Fetch Function ---
     const fetchComplaints = useCallback(async () => {
-        if (!user) return; // Should already be guarded by the useEffect below
+        if (!user) return;
 
         setLoading(true);
         try {
-            // NOTE: We fetch ALL complaints to perform local aggregation for the dashboard stats
+            // Fetch all complaints for community-wide aggregation.
+            // If your backend filters by the logged-in user by default, pass a query
+            // param (e.g. ?all=true) so it returns the full dataset.
             const res = await axios.get(`${API_BASE_URL}/complaints/all`, {
                 withCredentials: true,
-                
+                params: { all: true },   // ← tells backend not to filter by userId
             });
-            
-            // Simulate adding mock data (votes/views) since your current backend only returns basic complaint data
-            const enrichedData = res.data.data.map(comp => ({
+
+            const enrichedData = (res.data.data || []).map(comp => ({
                 ...comp,
-                mockVotes: Math.floor(Math.random() * 30),
+                mockVotes: 0,   // votes come from the vote endpoints, not randomised
             }));
 
             setAllComplaints(enrichedData);
@@ -341,16 +363,15 @@ const Dashboard = () => {
                             <div className="impact-stats">
                                 <div className="impact-stat-item">
                                     <span>Issues Resolved</span>
-                                    {/* Using resolvedIssues count for dynamic data */}
                                     <strong>{resolvedIssues} <small>total</small></strong>
                                 </div>
                                 <div className="impact-stat-item">
                                     <span>Response Time</span>
-                                    <strong>N/A <small>avg</small></strong>
+                                    <strong>{avgResponseTime} <small>avg</small></strong>
                                 </div>
                                 <div className="impact-stat-item">
                                     <span>Community Score</span>
-                                    <strong>N/A</strong>
+                                    <strong>{communityScore}</strong>
                                 </div>
                             </div>
                         </div>
