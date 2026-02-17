@@ -116,8 +116,31 @@ const Dashboard = () => {
             }
         });
 
-        // --- Compute avg response time from resolved complaints ---
-        // Uses updatedAt as the resolution timestamp (when status last changed to resolved)
+        // Get the top 3 recent reports (sorted by creation time)
+        const sortedReports = [...allComplaints]
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 3);
+
+        const mappedRecentReports = sortedReports.map(comp => ({
+            title: comp.title,
+            // Use the first address entry or fallback
+            location: comp.address?.[0] || 'Unknown Location', 
+            // Mock data for now, actual votes should come from backend aggregation
+            votes: comp.mockVotes || Math.floor(Math.random() * 30), 
+            time: getRelativeTime(comp.createdAt),
+            status: comp.status === 'recived' ? 'Pending' : comp.status === 'inReview' ? 'In Progress' : comp.status === 'resolved' ? 'Resolved' : 'Pending',
+        }));
+        
+        // Convert category map back to array format for rendering
+        const finalCategories = Object.keys(categoryCounts)
+            .filter(cat => categoryCounts[cat].count > 0 || cat !== 'Other') // Hide 'Other' if count is zero
+            .map(cat => ({
+                category: cat,
+                count: categoryCounts[cat].count,
+                icon: categoryCounts[cat].icon,
+            }));
+
+        // --- Avg response time: days between createdAt and updatedAt for resolved complaints ---
         const resolvedWithDates = allComplaints.filter(
             c => c.status === 'resolved' && c.createdAt && c.updatedAt
         );
@@ -132,32 +155,10 @@ const Dashboard = () => {
                 : `${avgDays.toFixed(1)} days avg`;
         }
 
-        // --- Compute community score = resolution rate as a percentage ---
+        // --- Community score: resolution rate as a percentage ---
         const communityScore = totals.totalReports > 0
             ? `${Math.round((totals.resolvedIssues / totals.totalReports) * 100)}%`
             : 'N/A';
-
-        // Get the top 3 recent reports (sorted by creation time)
-        const sortedReports = [...allComplaints]
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .slice(0, 3);
-
-        const mappedRecentReports = sortedReports.map(comp => ({
-            title: comp.title,
-            location: comp.address?.[0] || 'Unknown Location', 
-            votes: comp.mockVotes || 0, 
-            time: getRelativeTime(comp.createdAt),
-            status: comp.status === 'recived' ? 'Pending' : comp.status === 'inReview' ? 'In Progress' : comp.status === 'resolved' ? 'Resolved' : 'Pending',
-        }));
-        
-        // Convert category map back to array format for rendering
-        const finalCategories = Object.keys(categoryCounts)
-            .filter(cat => categoryCounts[cat].count > 0 || cat !== 'Other')
-            .map(cat => ({
-                category: cat,
-                count: categoryCounts[cat].count,
-                icon: categoryCounts[cat].icon,
-            }));
 
         return {
             ...totals,
@@ -175,20 +176,39 @@ const Dashboard = () => {
 
         setLoading(true);
         try {
-            // Fetch all complaints for community-wide aggregation.
-            // If your backend filters by the logged-in user by default, pass a query
-            // param (e.g. ?all=true) so it returns the full dataset.
             const res = await axios.get(`${API_BASE_URL}/complaints/all`, {
                 withCredentials: true,
-                params: { all: true },   // ← tells backend not to filter by userId
             });
 
-            const enrichedData = (res.data.data || []).map(comp => ({
-                ...comp,
-                mockVotes: 0,   // votes come from the vote endpoints, not randomised
-            }));
+            // Safely extract the array regardless of response envelope shape:
+            // { data: [...] }  OR  { data: { data: [...] } }  OR  bare array
+            const raw = res.data;
+            const complaints = Array.isArray(raw)
+                ? raw
+                : Array.isArray(raw?.data)
+                    ? raw.data
+                    : Array.isArray(raw?.data?.data)
+                        ? raw.data.data
+                        : [];
 
-            setAllComplaints(enrichedData);
+            console.log(`Dashboard: fetched ${complaints.length} complaints`);
+            if (complaints.length > 0) {
+                console.log('Dashboard: first complaint sample:', {
+                    status: complaints[0].status,
+                    title: complaints[0].title,
+                    _id: complaints[0]._id,
+                });
+                // Log status breakdown so you can see the counts
+                const statusCounts = complaints.reduce((acc, c) => {
+                    acc[c.status] = (acc[c.status] || 0) + 1;
+                    return acc;
+                }, {});
+                console.log('Dashboard: status breakdown:', statusCounts);
+            } else {
+                console.warn('Dashboard: API returned 0 complaints — check if backend filters by userId');
+                console.log('Dashboard: raw API response was:', res.data);
+            }
+            setAllComplaints(complaints);
         } catch (err) {
             console.error("Failed to fetch complaints:", err.response?.data || err.message);
             setError(err.response?.data?.message || 'Failed to fetch complaints');
@@ -367,7 +387,7 @@ const Dashboard = () => {
                                 </div>
                                 <div className="impact-stat-item">
                                     <span>Response Time</span>
-                                    <strong>{avgResponseTime} <small>avg</small></strong>
+                                    <strong>{avgResponseTime}</strong>
                                 </div>
                                 <div className="impact-stat-item">
                                     <span>Community Score</span>
