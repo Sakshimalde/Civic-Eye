@@ -94,25 +94,21 @@ const Dashboard = () => {
         };
 
         allComplaints.forEach(comp => {
-            const status = comp.status;
-            const displayCategory = mapServerCategory(comp.assignedTo);
+            // Normalise to lowercase+trimmed so minor spelling/case differences don't break counts
+            const status = (comp.status || '').toLowerCase().trim();
 
-            // Tally status counts
-            if (status === 'recived' || status === 'inReview') {
-                totals.activeIssues++;
-                if (status === 'recived') {
-                    totals.pendingIssues++;
-                }
-            }
+            // "resolved" → Resolved Issues
             if (status === 'resolved') {
                 totals.resolvedIssues++;
             }
-            
-            // Tally category counts
-            if (categoryCounts[displayCategory]) {
-                categoryCounts[displayCategory].count++;
-            } else {
-                categoryCounts['Other'].count++;
+            // "recived" or "received" → Pending Issues
+            else if (status === 'recived' || status === 'received') {
+                totals.pendingIssues++;
+                totals.activeIssues++;
+            }
+            // "inreview" / "in review" / "inReview" → Active Issues (in review)
+            else if (status === 'inreview' || status === 'in review') {
+                totals.activeIssues++;
             }
         });
 
