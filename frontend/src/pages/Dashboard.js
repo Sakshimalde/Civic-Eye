@@ -311,7 +311,7 @@ const Dashboard = () => {
                         {/* FIX: Use a flex container to align text and icon */}
                         <div className="stat-content-wrapper">
                             <div className="stat-info-text">
-                                <h3 className="stat-value">{totalReports}</h3>
+                                <h3 className="stat-value">{totals.totalReports}</h3>
                                 <p className="stat-label">Total Reports</p>
                             </div>
                             <div className="stat-icon-container">
@@ -322,7 +322,7 @@ const Dashboard = () => {
                     <div className="stat-card active-issues-card">
                         <div className="stat-content-wrapper">
                             <div className="stat-info-text">
-                                <h3 className="stat-value">{activeIssues}</h3>
+                                <h3 className="stat-value">{totals.activeIssues}</h3>
                                 <p className="stat-label">Active Issues</p>
                             </div>
                             <div className="stat-icon-container">
@@ -333,7 +333,7 @@ const Dashboard = () => {
                     <div className="stat-card resolved-card">
                         <div className="stat-content-wrapper">
                             <div className="stat-info-text">
-                                <h3 className="stat-value">{resolvedIssues}</h3>
+                                <h3 className="stat-value">{totals.resolvedIssues}</h3>
                                 <p className="stat-label">Resolved Issues</p>
                             </div>
                             <div className="stat-icon-container">
@@ -344,7 +344,7 @@ const Dashboard = () => {
                     <div className="stat-card pending-card">
                         <div className="stat-content-wrapper">
                             <div className="stat-info-text">
-                                <h3 className="stat-value">{pendingIssues}</h3>
+                                <h3 className="stat-value">{totals.pendingIssues}</h3>
                                 <p className="stat-label">Pending Issues</p>
                             </div>
                             <div className="stat-icon-container">
