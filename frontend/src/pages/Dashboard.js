@@ -93,82 +93,7 @@ const Dashboard = () => {
             'Other': { count: 0, icon: <FileText size={24} /> },
         };
 
-        allComplaints.forEach(comp => {
-            // Normalise to lowercase+trimmed so minor spelling/case differences don't break counts
-            const status = (comp.status || '').toLowerCase().trim();
-
-            // "resolved" → Resolved Issues
-            if (status === 'resolved') {
-                console.log(totals.resolvedIssues++);
-
-            }
-            // "recived" or "received" → Pending Issues
-            else if (status === 'recived' || status === 'received') {
-                console.log(totals.pendingIssues++);
-                console.log(totals.activeIssues++);
-            }
-            // "inreview" / "in review" / "inReview" → Active Issues (in review)
-            else if (status === 'inreview' || status === 'in review') {
-                totals.activeIssues++;
-            }
-        });
-        console.log("FINAL TOTALS:", totals);
-console.log("UI VALUES:", totalReports, activeIssues, resolvedIssues, pendingIssues);
-
-
-        // Get the top 3 recent reports (sorted by creation time)
-        const sortedReports = [...allComplaints]
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .slice(0, 3);
-
-        const mappedRecentReports = sortedReports.map(comp => ({
-            title: comp.title,
-            // Use the first address entry or fallback
-            location: comp.address?.[0] || 'Unknown Location', 
-            // Mock data for now, actual votes should come from backend aggregation
-            votes: comp.mockVotes || Math.floor(Math.random() * 30), 
-            time: getRelativeTime(comp.createdAt),
-            status: comp.status === 'recived' ? 'Pending' : comp.status === 'inReview' ? 'In Progress' : comp.status === 'resolved' ? 'Resolved' : 'Pending',
-        }));
-        
-        // Convert category map back to array format for rendering
-        const finalCategories = Object.keys(categoryCounts)
-            .filter(cat => categoryCounts[cat].count > 0 || cat !== 'Other') // Hide 'Other' if count is zero
-            .map(cat => ({
-                category: cat,
-                count: categoryCounts[cat].count,
-                icon: categoryCounts[cat].icon,
-            }));
-
-        // --- Avg response time: days between createdAt and updatedAt for resolved complaints ---
-        const resolvedWithDates = allComplaints.filter(
-            c => c.status === 'resolved' && c.createdAt && c.updatedAt
-        );
-        let avgResponseTime = 'N/A';
-        if (resolvedWithDates.length > 0) {
-            const totalMs = resolvedWithDates.reduce((sum, c) => {
-                return sum + (new Date(c.updatedAt) - new Date(c.createdAt));
-            }, 0);
-            const avgDays = totalMs / resolvedWithDates.length / (1000 * 60 * 60 * 24);
-            avgResponseTime = avgDays < 1
-                ? `${Math.round(avgDays * 24)} hrs avg`
-                : `${avgDays.toFixed(1)} days avg`;
-        }
-
-        // --- Community score: resolution rate as a percentage ---
-        const communityScore = totals.totalReports > 0
-            ? `${Math.round((totals.resolvedIssues / totals.totalReports) * 100)}%`
-            : 'N/A';
-
-        return {
-            ...totals,
-            avgResponseTime,
-            communityScore,
-            recentReports: mappedRecentReports,
-            issueCategories: finalCategories,
-        };
-    }, [allComplaints]);
-    
+       
 
     
     
@@ -237,6 +162,82 @@ console.log("UI VALUES:", totalReports, activeIssues, resolvedIssues, pendingIss
              navigate('/login');
         }
     }, [user, authChecked, navigate, fetchComplaints]);
+
+    allComplaints.forEach(comp => {
+        // Normalise to lowercase+trimmed so minor spelling/case differences don't break counts
+        const status = (comp.status || '').toLowerCase().trim();
+
+        // "resolved" → Resolved Issues
+        if (status === 'resolved') {
+            console.log(totals.resolvedIssues++);
+
+        }
+        // "recived" or "received" → Pending Issues
+        else if (status === 'recived' || status === 'received') {
+            console.log(totals.pendingIssues++);
+            console.log(totals.activeIssues++);
+        }
+        // "inreview" / "in review" / "inReview" → Active Issues (in review)
+        else if (status === 'inreview' || status === 'in review') {
+            totals.activeIssues++;
+        }
+    });
+    console.log("FINAL TOTALS:", totals);
+console.log("UI VALUES:", totalReports, activeIssues, resolvedIssues, pendingIssues);
+
+
+    // Get the top 3 recent reports (sorted by creation time)
+    const sortedReports = [...allComplaints]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 3);
+
+    const mappedRecentReports = sortedReports.map(comp => ({
+        title: comp.title,
+        // Use the first address entry or fallback
+        location: comp.address?.[0] || 'Unknown Location', 
+        // Mock data for now, actual votes should come from backend aggregation
+        votes: comp.mockVotes || Math.floor(Math.random() * 30), 
+        time: getRelativeTime(comp.createdAt),
+        status: comp.status === 'recived' ? 'Pending' : comp.status === 'inReview' ? 'In Progress' : comp.status === 'resolved' ? 'Resolved' : 'Pending',
+    }));
+    
+    // Convert category map back to array format for rendering
+    const finalCategories = Object.keys(categoryCounts)
+        .filter(cat => categoryCounts[cat].count > 0 || cat !== 'Other') // Hide 'Other' if count is zero
+        .map(cat => ({
+            category: cat,
+            count: categoryCounts[cat].count,
+            icon: categoryCounts[cat].icon,
+        }));
+
+    // --- Avg response time: days between createdAt and updatedAt for resolved complaints ---
+    const resolvedWithDates = allComplaints.filter(
+        c => c.status === 'resolved' && c.createdAt && c.updatedAt
+    );
+    let avgResponseTime = 'N/A';
+    if (resolvedWithDates.length > 0) {
+        const totalMs = resolvedWithDates.reduce((sum, c) => {
+            return sum + (new Date(c.updatedAt) - new Date(c.createdAt));
+        }, 0);
+        const avgDays = totalMs / resolvedWithDates.length / (1000 * 60 * 60 * 24);
+        avgResponseTime = avgDays < 1
+            ? `${Math.round(avgDays * 24)} hrs avg`
+            : `${avgDays.toFixed(1)} days avg`;
+    }
+
+    // --- Community score: resolution rate as a percentage ---
+    const communityScore = totals.totalReports > 0
+        ? `${Math.round((totals.resolvedIssues / totals.totalReports) * 100)}%`
+        : 'N/A';
+
+    return {
+        ...totals,
+        avgResponseTime,
+        communityScore,
+        recentReports: mappedRecentReports,
+        issueCategories: finalCategories,
+    };
+}, [allComplaints]);
 
 
     const handleLogout = () => {
