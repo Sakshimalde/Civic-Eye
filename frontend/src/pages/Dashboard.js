@@ -112,6 +112,9 @@ const Dashboard = () => {
                 totals.activeIssues++;
             }
         });
+        console.log("FINAL TOTALS:", totals);
+console.log("UI VALUES:", totalReports, activeIssues, resolvedIssues, pendingIssues);
+
 
         // Get the top 3 recent reports (sorted by creation time)
         const sortedReports = [...allComplaints]
@@ -165,6 +168,9 @@ const Dashboard = () => {
             issueCategories: finalCategories,
         };
     }, [allComplaints]);
+    console.log("FINAL TOTALS:", totals);
+console.log("UI VALUES:", totalReports, activeIssues, resolvedIssues, pendingIssues);
+
     
     
     // --- API Fetch Function ---
