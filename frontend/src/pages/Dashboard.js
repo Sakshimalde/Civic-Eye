@@ -79,6 +79,7 @@ const Dashboard = () => {
     
     // 1. Complaint Aggregation and Recent Reports
     const { totalReports, activeIssues, resolvedIssues, pendingIssues, avgResponseTime, communityScore, recentReports, issueCategories } = useMemo(() => {
+        console.log("useMemo running, count =", allComplaints.length); // ← ADD THIS LINE
         let totals = {
             totalReports: allComplaints.length,
             activeIssues: 0,
