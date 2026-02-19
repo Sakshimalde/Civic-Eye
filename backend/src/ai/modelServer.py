@@ -27,20 +27,19 @@ CONFIDENCE_THRESHOLD = 0.50
 
 # Load model
 
-print(f"Loading model from {MODEL_PATH} ...", flush=True)
-
-if not os.path.exists(MODEL_PATH):
-    print(f"ERROR: Model file not found at {MODEL_PATH}", flush=True)
-    print(f"Files in current directory: {os.listdir('.')}", flush=True)
-    sys.exit(1)
-
 try:
-    model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+    model = tf.keras.saving.load_model(MODEL_PATH, compile=False)
     print("Model loaded successfully.", flush=True)
     print(f"Model input shape: {model.input_shape}", flush=True)
 except Exception as e:
     print(f"ERROR loading model: {e}", flush=True)
-    sys.exit(1)
+    # Try legacy loader as fallback
+    try:
+        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+        print("Model loaded with legacy loader.", flush=True)
+    except Exception as e2:
+        print(f"ERROR with legacy loader too: {e2}", flush=True)
+        sys.exit(1)
 
 @app.route('/health', methods=['GET'])
 def health():
