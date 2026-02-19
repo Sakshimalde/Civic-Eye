@@ -27,7 +27,7 @@ app = Flask(__name__)
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 
-MODEL_PATH = os.environ.get('MODEL_PATH', './models/civic_issue_model_new.h5')
+MODEL_PATH = os.environ.get('MODEL_PATH', './civic_issue_model_new.h5')
 
 # UPDATE THIS LIST to match EXACTLY the class order your model was trained on.
 # Typically this is alphabetical order of your training folder names.
