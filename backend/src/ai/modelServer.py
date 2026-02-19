@@ -6,6 +6,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
 import tensorflow as tf
+import tensorflow as tf
+tf.compat.v1.disable_eager_execution()
 
 app = Flask(__name__)
 CORS(app)
@@ -24,6 +26,7 @@ IMAGE_SIZE = (224, 224)
 CONFIDENCE_THRESHOLD = 0.50
 
 # Load model
+
 print(f"Loading model from {MODEL_PATH} ...", flush=True)
 
 if not os.path.exists(MODEL_PATH):
@@ -32,7 +35,7 @@ if not os.path.exists(MODEL_PATH):
     sys.exit(1)
 
 try:
-    model = tf.keras.models.load_model(MODEL_PATH)
+    model = tf.keras.models.load_model(MODEL_PATH, compile=False)
     print("Model loaded successfully.", flush=True)
     print(f"Model input shape: {model.input_shape}", flush=True)
 except Exception as e:
