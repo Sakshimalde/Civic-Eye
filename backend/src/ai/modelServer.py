@@ -7,7 +7,7 @@ from flask_cors import CORS
 from PIL import Image
 import tensorflow as tf
 import tensorflow as tf
-tf.compat.v1.disable_eager_execution()
+tf.compat.v1.enable_eager_execution()
 
 app = Flask(__name__)
 CORS(app)
