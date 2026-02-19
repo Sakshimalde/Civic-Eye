@@ -14,10 +14,10 @@
  *    app.use('/api/v1/ai', aiRoute);
  */
 
-const express = require('express');
-const multer = require('multer');
-const axios = require('axios');
-const FormData = require('form-data');
+import express from 'express';
+import multer from 'multer';
+import axios from 'axios';
+import FormData from 'form-data';
 const router = express.Router();
 
 // Multer: keep file in memory so we can forward it to the Python model server
@@ -116,4 +116,4 @@ router.post('/validate-photo', upload.single('photo'), async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;
