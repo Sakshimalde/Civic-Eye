@@ -1,0 +1,63 @@
+/* ─── AI Validation Badge ─────────────────────────────────────────────────── */
+/* Add these styles to your ReportIssue.css file */
+
+.ai-validation-badge {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    line-height: 1.5;
+    border: 1px solid transparent;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Validating (spinner state) */
+.ai-validation-badge.ai-validating {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Accepted / verified */
+.ai-validation-badge.ai-accepted {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+/* Rejected / mismatch */
+.ai-validation-badge.ai-rejected {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+/* Neutral info */
+.ai-validation-badge.ai-info {
+    background: #fefce8;
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+/* Sub-details row */
+.ai-validation-badge .ai-detail {
+    font-size: 12px;
+    opacity: 0.85;
+}
+
+/* Call-to-action hint */
+.ai-validation-badge .ai-action {
+    font-size: 12.5px;
+    margin-top: 2px;
+}
