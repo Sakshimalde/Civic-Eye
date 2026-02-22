@@ -12,7 +12,7 @@ tf.compat.v1.enable_eager_execution()
 app = Flask(__name__)
 CORS(app)
 
-MODEL_PATH = os.environ.get('MODEL_PATH', './civic_issue_model_new.h5')
+MODEL_PATH = os.environ.get('MODEL_PATH', './best_civic_model.h5')
 
 CLASS_LABELS = [
     'Garbage',
