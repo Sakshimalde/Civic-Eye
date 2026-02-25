@@ -22,8 +22,6 @@ const UserReportIssue = () => {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
-    const [aiValidating, setAiValidating] = useState(false);
-    const [aiValidationResult, setAiValidationResult] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
         category: 'Select issue category', // Maps to 'assignedTo' in backend
@@ -36,6 +34,8 @@ const UserReportIssue = () => {
         photoPreview: null // URL for preview
     });
     const [loading, setLoading] = useState(false);
+    const [aiValidating, setAiValidating] = useState(false);
+    const [aiValidationResult, setAiValidationResult] = useState(null); // { valid: bool, predictedClass: string, confidence: number, message: string }
     const [showMapModal, setShowMapModal] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState(null); // { lat, lng, address }
     const [mapLoading, setMapLoading] = useState(false);
@@ -86,7 +86,7 @@ const UserReportIssue = () => {
         'Street Lights': 'Street Lights',
         'Water Issues': 'Water Issues',
         'Vandalism': 'Vandalism',
-        'Other': null
+        'Other': null // 'Other' skips AI validation
     };
 
     const validateImageWithAI = async (file, category) => {
@@ -96,16 +96,15 @@ const UserReportIssue = () => {
             const aiFormData = new FormData();
             aiFormData.append('photo', file);
             aiFormData.append('category', category);
-
+    
             const response = await axios.post(
                 `${API_BASE_URL}/ai/validate-photo`,
                 aiFormData,
                 { withCredentials: true }
             );
-
+    
             const { valid, serverDown, predictedClass, confidence, message } = response.data;
-
-            // Server is down — block submission with clear message
+    
             if (serverDown) {
                 setAiValidationResult({
                     valid: false,
@@ -116,12 +115,12 @@ const UserReportIssue = () => {
                 });
                 return false;
             }
-
+    
             setAiValidationResult({ valid, predictedClass, confidence, message });
             return valid;
+    
         } catch (error) {
             console.error('AI validation error:', error);
-            // Network/unexpected error — also block submission
             setAiValidationResult({
                 valid: false,
                 serverDown: true,
@@ -151,13 +150,14 @@ const UserReportIssue = () => {
 
         const previewUrl = URL.createObjectURL(file);
 
+        // Set preview immediately so user can see the photo
         setFormData(prev => ({
             ...prev,
             photo: file,
             photoPreview: previewUrl
         }));
 
-        // Run AI validation if a valid category is selected
+        // Run AI validation only if a category is selected and it has a model label
         const selectedCategory = formData.category;
         const expectedLabel = CATEGORY_TO_MODEL_LABEL[selectedCategory];
 
@@ -336,15 +336,16 @@ const handleSubmit = async (e) => {
 
     setLoading(true);
 
+    // Block submission if AI validation explicitly failed
     // Block submission if AI validation failed or server is down
-    if (aiValidationResult && aiValidationResult.valid === false) {
-        alert(aiValidationResult.serverDown
-            ? 'AI validation server is currently down. Please try again after some time.'
-            : `Photo rejected: ${aiValidationResult.message}\n\nPlease upload a photo that matches the selected category.`
-        );
-        setLoading(false);
-        return;
-    }
+if (aiValidationResult && aiValidationResult.valid === false) {
+    alert(aiValidationResult.serverDown
+        ? 'AI validation server is currently down. Please try again after some time.'
+        : `Photo rejected: ${aiValidationResult.message}\n\nPlease upload a photo that matches the selected category.`
+    );
+    setLoading(false);
+    return;
+}
 
     // 2. Prepare FormData for multipart/form-data upload
     const submitData = new FormData();
@@ -718,53 +719,53 @@ const handleSubmit = async (e) => {
             )}
         </div>
         <div className="input-hint">JPG, PNG up to 10MB • Photos help get faster responses</div>
+
+        {/* AI Validation Status */}
+        {aiValidating && (
+    <div className="ai-validation-badge ai-validating">
+        <div className="loading-spinner-small"></div>
+        <span>🤖 AI is verifying your photo matches the selected category...</span>
+    </div>
+)}
+{!aiValidating && aiValidationResult && (
+    <div className={`ai-validation-badge ${
+        aiValidationResult.serverDown ? 'ai-server-down' :
+        aiValidationResult.valid === false ? 'ai-rejected' :
+        aiValidationResult.valid === true ? 'ai-accepted' : 'ai-info'
+    }`}>
+        {aiValidationResult.serverDown && (
+            <span>🔴 <strong>Server Down:</strong> {aiValidationResult.message}</span>
+        )}
+        {!aiValidationResult.serverDown && aiValidationResult.valid === false && (
+            <>
+                <span>❌ <strong>Photo Mismatch:</strong> {aiValidationResult.message}</span>
+                {aiValidationResult.predictedClass && (
+                    <span className="ai-detail">
+                        Detected: <strong>{aiValidationResult.predictedClass}</strong>
+                        {aiValidationResult.confidence && ` (${(aiValidationResult.confidence * 100).toFixed(1)}% confidence)`}
+                    </span>
+                )}
+                <span className="ai-action">Please remove the photo and upload one that shows a <strong>{formData.category}</strong> issue.</span>
+            </>
+        )}
+        {!aiValidationResult.serverDown && aiValidationResult.valid === true && (
+            <>
+                <span>✅ <strong>Photo Verified:</strong> {aiValidationResult.message || 'Photo matches the selected category.'}</span>
+                {aiValidationResult.predictedClass && (
+                    <span className="ai-detail">
+                        Detected: <strong>{aiValidationResult.predictedClass}</strong>
+                        {aiValidationResult.confidence && ` (${(aiValidationResult.confidence * 100).toFixed(1)}% confidence)`}
+                    </span>
+                )}
+            </>
+        )}
+        {aiValidationResult.valid === null && (
+            <span>ℹ️ {aiValidationResult.message}</span>
+        )}
+    </div>
+)}
     </div>
 </div>
-
-                            {/* AI Validation Status */}
-                            {aiValidating && (
-                                <div className="ai-validation-badge ai-validating">
-                                    <div className="loading-spinner-small"></div>
-                                    <span>🤖 AI is verifying your photo matches the selected category...</span>
-                                </div>
-                            )}
-                            {!aiValidating && aiValidationResult && (
-                                <div className={`ai-validation-badge ${
-                                    aiValidationResult.serverDown ? 'ai-server-down' :
-                                    aiValidationResult.valid === false ? 'ai-rejected' :
-                                    aiValidationResult.valid === true ? 'ai-accepted' : 'ai-info'
-                                }`}>
-                                    {aiValidationResult.serverDown && (
-                                        <span>🔴 <strong>Server Down:</strong> {aiValidationResult.message}</span>
-                                    )}
-                                    {!aiValidationResult.serverDown && aiValidationResult.valid === false && (
-                                        <>
-                                            <span>❌ <strong>Photo Mismatch:</strong> {aiValidationResult.message}</span>
-                                            {aiValidationResult.predictedClass && (
-                                                <span className="ai-detail">
-                                                    Detected: <strong>{aiValidationResult.predictedClass}</strong>
-                                                    {aiValidationResult.confidence && ` (${(aiValidationResult.confidence * 100).toFixed(1)}% confidence)`}
-                                                </span>
-                                            )}
-                                            <span className="ai-action">Please remove the photo and upload one that shows a <strong>{formData.category}</strong> issue.</span>
-                                        </>
-                                    )}
-                                    {!aiValidationResult.serverDown && aiValidationResult.valid === true && (
-                                        <>
-                                            <span>✅ <strong>Photo Verified:</strong> {aiValidationResult.message || 'Photo matches the selected category.'}</span>
-                                            {aiValidationResult.predictedClass && (
-                                                <span className="ai-detail">
-                                                    Detected: <strong>{aiValidationResult.predictedClass}</strong>
-                                                    {aiValidationResult.confidence && ` (${(aiValidationResult.confidence * 100).toFixed(1)}% confidence)`}
-                                                </span>
-                                            )}
-                                        </>
-                                    )}
-                                    {aiValidationResult.valid === null && (
-                                        <span>ℹ️ {aiValidationResult.message}</span>
-                                    )}
-                                </div>
-                            )}
 
                             {/* Submit Button */}
                             <div className="form-actions">
@@ -776,35 +777,35 @@ const handleSubmit = async (e) => {
                                     Cancel
                                 </button>
                                 <button
-                                    type="submit"
-                                    className="btn-primary"
-                                    disabled={
-                                        loading ||
-                                        aiValidating ||
-                                        (aiValidationResult && aiValidationResult.valid === false)
-                                    }
-                                    title={
-                                        aiValidationResult?.serverDown
-                                            ? 'AI server is down. Try again later.'
-                                            : aiValidationResult?.valid === false
-                                            ? 'Please upload a valid photo for the selected category'
-                                            : ''
-                                    }
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div className="loading-spinner-small"></div>
-                                            Submitting...
-                                        </>
-                                    ) : aiValidating ? (
-                                        <>
-                                            <div className="loading-spinner-small"></div>
-                                            Validating Photo...
-                                        </>
-                                    ) : (
-                                        'Submit Report'
-                                    )}
-                                </button>
+    type="submit"
+    className="btn-primary"
+    disabled={
+        loading ||
+        aiValidating ||
+        (aiValidationResult && aiValidationResult.valid === false)
+    }
+    title={
+        aiValidationResult?.serverDown
+            ? 'AI server is down. Try again later.'
+            : aiValidationResult?.valid === false
+            ? 'Please upload a valid photo for the selected category'
+            : ''
+    }
+>
+    {loading ? (
+        <>
+            <div className="loading-spinner-small"></div>
+            Submitting...
+        </>
+    ) : aiValidating ? (
+        <>
+            <div className="loading-spinner-small"></div>
+            Validating Photo...
+        </>
+    ) : (
+        'Submit Report'
+    )}
+</button>
                             </div>
                         </form>
                     </div>
