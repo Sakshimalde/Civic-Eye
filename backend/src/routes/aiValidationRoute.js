@@ -1,29 +1,13 @@
-/**
- * AI Photo Validation Route
- * POST /api/v1/ai/validate-photo
- *
- * Uses the civic_issue_model_new.h5 model (via Python subprocess or a Python Flask microservice)
- * to verify that an uploaded photo matches the selected civic issue category.
- *
- * SETUP INSTRUCTIONS:
- * 1. Place civic_issue_model_new.h5 somewhere accessible, e.g. /server/models/civic_issue_model_new.h5
- * 2. Install Python deps: pip install tensorflow pillow numpy flask
- * 3. Run the Python model server: python modelServer.py
- * 4. Register this router in your Express app:
- *    const aiRoute = require('./routes/aiValidationRoute');
- *    app.use('/api/v1/ai', aiRoute);
- */
-
 import express from 'express';
 import multer from 'multer';
 import axios from 'axios';
 import FormData from 'form-data';
+
 const router = express.Router();
 
-// Multer: keep file in memory so we can forward it to the Python model server
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
@@ -33,8 +17,6 @@ const upload = multer({
     }
 });
 
-// Map frontend category names → model class labels
-// These MUST match the class names your model was trained on exactly.
 const CATEGORY_TO_MODEL_LABEL = {
     'Garbage & Waste': 'Garbage',
     'Potholes': 'Potholes',
@@ -45,12 +27,36 @@ const CATEGORY_TO_MODEL_LABEL = {
 
 const PYTHON_MODEL_SERVER_URL = process.env.MODEL_SERVER_URL || 'http://localhost:5001';
 
-/**
- * POST /api/v1/ai/validate-photo
- * Body (multipart/form-data):
- *   - photo: image file
- *   - category: string (e.g. "Garbage & Waste")
- */
+// ← CHANGED: retry helper — tries up to 3 times with 5s gap between attempts
+const callFlaskWithRetry = async (formData, retries = 3) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            console.log(`[AI] Attempt ${attempt}/${retries} → ${PYTHON_MODEL_SERVER_URL}/predict`);
+            const response = await axios.post(
+                `${PYTHON_MODEL_SERVER_URL}/predict`,
+                formData,
+                {
+                    headers: formData.getHeaders(),
+                    timeout: 60000, // ← CHANGED: 60s instead of 15s — gives Render cold start time
+                }
+            );
+            return response;
+        } catch (err) {
+            const status = err.response?.status;
+            const isLastAttempt = attempt === retries;
+
+            // ← CHANGED: retry on 429, 503, timeout, or connection reset
+            if (!isLastAttempt && (status === 429 || status === 503 || err.code === 'ECONNABORTED' || err.code === 'ECONNRESET')) {
+                console.log(`[AI] Attempt ${attempt} failed (${status || err.code}) — waiting 5s before retry...`);
+                await new Promise(res => setTimeout(res, 5000));
+                continue;
+            }
+
+            throw err;
+        }
+    }
+};
+
 router.post('/validate-photo', upload.single('photo'), async (req, res) => {
     try {
         const { category } = req.body;
@@ -62,7 +68,6 @@ router.post('/validate-photo', upload.single('photo'), async (req, res) => {
 
         const expectedLabel = CATEGORY_TO_MODEL_LABEL[category];
         if (!expectedLabel) {
-            // Category doesn't require AI validation (e.g. "Other")
             return res.json({
                 valid: true,
                 predictedClass: null,
@@ -71,7 +76,6 @@ router.post('/validate-photo', upload.single('photo'), async (req, res) => {
             });
         }
 
-        // Forward photo to the Python model server
         const form = new FormData();
         form.append('photo', file.buffer, {
             filename: file.originalname,
@@ -79,11 +83,7 @@ router.post('/validate-photo', upload.single('photo'), async (req, res) => {
         });
         form.append('expected_label', expectedLabel);
 
-        const modelResponse = await axios.post(
-            `${PYTHON_MODEL_SERVER_URL}/predict`,
-            form,
-            { headers: form.getHeaders(), timeout: 15000 }
-        );
+        const modelResponse = await callFlaskWithRetry(form); // ← CHANGED: use retry helper
 
         const { predicted_class, confidence, is_match } = modelResponse.data;
 
@@ -104,9 +104,7 @@ router.post('/validate-photo', upload.single('photo'), async (req, res) => {
         }
 
     } catch (error) {
-        console.error('AI Validation Error:', error.message);
-
-        // Gracefully degrade — don't block users if model server is down
+        console.error('[AI] All retries failed:', error.message);
         return res.json({
             valid: true,
             predictedClass: null,

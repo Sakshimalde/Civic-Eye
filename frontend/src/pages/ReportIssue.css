@@ -1139,3 +1139,18 @@
 .camera-label:hover {
     background-color: #dbeafe;
 }
+/* Add this to your ReportIssue.css */
+
+/* Server down state — red/orange badge */
+.ai-validation-badge.ai-server-down {
+    background-color: #fff3f3;
+    border: 1px solid #e74c3c;
+    color: #c0392b;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+}
