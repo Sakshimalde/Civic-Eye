@@ -22,6 +22,8 @@ const UserReportIssue = () => {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
+    const [aiValidating, setAiValidating] = useState(false);
+const [aiValidationResult, setAiValidationResult] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
         category: 'Select issue category', // Maps to 'assignedTo' in backend
@@ -34,8 +36,6 @@ const UserReportIssue = () => {
         photoPreview: null // URL for preview
     });
     const [loading, setLoading] = useState(false);
-    const [aiValidating, setAiValidating] = useState(false);
-    const [aiValidationResult, setAiValidationResult] = useState(null); // { valid: bool, predictedClass: string, confidence: number, message: string }
     const [showMapModal, setShowMapModal] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState(null); // { lat, lng, address }
     const [mapLoading, setMapLoading] = useState(false);
