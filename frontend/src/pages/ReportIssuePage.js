@@ -92,43 +92,65 @@ const UserReportIssue = () => {
     const validateImageWithAI = async (file, category) => {
         setAiValidating(true);
         setAiValidationResult(null);
+    
         try {
             const aiFormData = new FormData();
             aiFormData.append('photo', file);
             aiFormData.append('category', category);
-
+    
             const response = await axios.post(
                 `${API_BASE_URL}/ai/validate-photo`,
                 aiFormData,
                 { withCredentials: true }
             );
-
+    
             const { valid, serverDown, predictedClass, confidence, message } = response.data;
-
-            // Server is down — block submission with clear message
+    
+            // 🔴 If backend explicitly says serverDown
             if (serverDown) {
                 setAiValidationResult({
                     valid: false,
                     serverDown: true,
                     predictedClass: null,
                     confidence: null,
-                    message: 'AI validation server is currently down. Please try again after some time.'
+                    message
                 });
                 return false;
             }
-
-            setAiValidationResult({ valid, predictedClass, confidence, message });
+    
+            setAiValidationResult({
+                valid,
+                serverDown: false,
+                predictedClass,
+                confidence,
+                message
+            });
+    
             return valid;
+    
         } catch (error) {
             console.error('AI validation error:', error);
-            // Network/unexpected error — also block submission
-            setAiValidationResult({
-                valid: false,
-                serverDown: true,
-                predictedClass: null,
-                confidence: null,
-                message: 'AI validation server is currently down. Please try again after some time.'
-            });
+    
+            // 🔴 If backend returned 503 OR network error
+            if (error.response?.status === 503) {
+                setAiValidationResult({
+                    valid: false,
+                    serverDown: true,
+                    predictedClass: null,
+                    confidence: null,
+                    message: error.response.data?.message || 
+                             'AI validation server is currently down. Please try again later.'
+                });
+            } else {
+                setAiValidationResult({
+                    valid: false,
+                    serverDown: true,
+                    predictedClass: null,
+                    confidence: null,
+                    message: 'Unable to connect to AI validation server.'
+                });
+            }
+    
             return false;
         } finally {
             setAiValidating(false);

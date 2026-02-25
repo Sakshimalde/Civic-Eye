@@ -25,29 +25,43 @@ const CATEGORY_TO_MODEL_LABEL = {
     'Vandalism': 'Vandalism',
 };
 
-const PYTHON_MODEL_SERVER_URL = process.env.MODEL_SERVER_URL || 'http://localhost:5001';
+const PYTHON_MODEL_SERVER_URL =
+    process.env.MODEL_SERVER_URL || 'http://localhost:5001';
 
-// ← CHANGED: retry helper — tries up to 3 times with 5s gap between attempts
+
+// 🔁 Retry helper (3 attempts, 5 sec gap)
 const callFlaskWithRetry = async (formData, retries = 3) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            console.log(`[AI] Attempt ${attempt}/${retries} → ${PYTHON_MODEL_SERVER_URL}/predict`);
+            console.log(
+                `[AI] Attempt ${attempt}/${retries} → ${PYTHON_MODEL_SERVER_URL}/predict`
+            );
+
             const response = await axios.post(
                 `${PYTHON_MODEL_SERVER_URL}/predict`,
                 formData,
                 {
                     headers: formData.getHeaders(),
-                    timeout: 60000, // ← CHANGED: 60s instead of 15s — gives Render cold start time
+                    timeout: 60000 // 60s for cold start
                 }
             );
+
             return response;
+
         } catch (err) {
             const status = err.response?.status;
             const isLastAttempt = attempt === retries;
 
-            // ← CHANGED: retry on 429, 503, timeout, or connection reset
-            if (!isLastAttempt && (status === 429 || status === 503 || err.code === 'ECONNABORTED' || err.code === 'ECONNRESET')) {
-                console.log(`[AI] Attempt ${attempt} failed (${status || err.code}) — waiting 5s before retry...`);
+            if (
+                !isLastAttempt &&
+                (status === 429 ||
+                    status === 503 ||
+                    err.code === 'ECONNABORTED' ||
+                    err.code === 'ECONNRESET')
+            ) {
+                console.log(
+                    `[AI] Attempt ${attempt} failed (${status || err.code}) — retrying in 5s...`
+                );
                 await new Promise(res => setTimeout(res, 5000));
                 continue;
             }
@@ -57,22 +71,28 @@ const callFlaskWithRetry = async (formData, retries = 3) => {
     }
 };
 
+
+// 🧠 AI Validation Route
 router.post('/validate-photo', upload.single('photo'), async (req, res) => {
     try {
         const { category } = req.body;
         const file = req.file;
 
         if (!file) {
-            return res.status(400).json({ message: 'No photo provided.' });
+            return res.status(400).json({
+                valid: false,
+                message: 'No photo provided.'
+            });
         }
 
         const expectedLabel = CATEGORY_TO_MODEL_LABEL[category];
+
         if (!expectedLabel) {
             return res.json({
                 valid: true,
                 predictedClass: null,
                 confidence: null,
-                message: 'Category does not require AI photo validation.'
+                message: 'Category does not require AI validation.'
             });
         }
 
@@ -83,33 +103,39 @@ router.post('/validate-photo', upload.single('photo'), async (req, res) => {
         });
         form.append('expected_label', expectedLabel);
 
-        const modelResponse = await callFlaskWithRetry(form); // ← CHANGED: use retry helper
+        const modelResponse = await callFlaskWithRetry(form);
 
-        const { predicted_class, confidence, is_match } = modelResponse.data;
+        const { predicted_class, confidence, is_match } =
+            modelResponse.data;
 
         if (is_match) {
             return res.json({
                 valid: true,
+                serverDown: false,
                 predictedClass: predicted_class,
-                confidence: confidence,
+                confidence,
                 message: `Photo confirmed as a ${predicted_class} issue.`
             });
         } else {
             return res.json({
                 valid: false,
+                serverDown: false,
                 predictedClass: predicted_class,
-                confidence: confidence,
-                message: `This photo appears to show "${predicted_class}", not "${category}". Please upload a relevant photo.`
+                confidence,
+                message: `This photo appears to show "${predicted_class}", not "${category}".`
             });
         }
 
     } catch (error) {
-        console.error('[AI] All retries failed:', error.message);
-        return res.json({
-            valid: true,
+        console.error('[AI] Server unreachable after retries:', error.message);
+
+        // 🔴 IMPORTANT FIX — BLOCK SUBMISSION
+        return res.status(503).json({
+            valid: false,
+            serverDown: true,
             predictedClass: null,
             confidence: null,
-            message: 'AI validation service unavailable — photo accepted without verification.'
+            message: 'AI validation server is currently down. Please try again later.'
         });
     }
 });
