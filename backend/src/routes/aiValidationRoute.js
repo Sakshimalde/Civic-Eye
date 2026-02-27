@@ -42,7 +42,7 @@ const callFlaskWithRetry = async (formData, retries = 3) => {
                 formData,
                 {
                     headers: formData.getHeaders(),
-                    timeout: 60000 // 60s for cold start
+                    timeout: 120000 // 60s for cold start
                 }
             );
 
