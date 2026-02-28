@@ -184,3 +184,29 @@ export const resolutionRejectedEmail = ({ citizenName, title, volunteerName, rej
         `
     )
 });
+
+// ── 6. Complaint Rejected by Admin ────────────────────────────────────────────
+export const complaintRejectedEmail = ({ citizenName, title, rejectionNote, complaintId }) => ({
+    subject: `❌ Complaint Rejected — "${title}"`,
+    html: wrap(
+        'Complaint Status Notification',
+        '#e74c3c',
+        `
+        <h2>Your complaint has been reviewed and rejected</h2>
+        <p>Hi <strong>${citizenName}</strong>,</p>
+        <p>After careful review, the admin has determined that your complaint does not meet the required criteria and has been <strong>rejected</strong>.</p>
+
+        <div class="info-box">
+          <table>
+            <tr><td>Complaint ID</td><td><strong>#${complaintId}</strong></td></tr>
+            <tr><td>Issue Title</td><td>${title}</td></tr>
+            <tr><td>Reason</td><td>${rejectionNote}</td></tr>
+            <tr><td>Status</td><td><span class="status-badge" style="background:#e74c3c20;color:#e74c3c;border-color:#e74c3c40;">❌ Rejected</span></td></tr>
+          </table>
+        </div>
+
+        <p>If you believe this was a mistake or the issue is still present, you are welcome to submit a new complaint with clearer details and photos through the CivicEye platform.</p>
+        <p>Thank you for your participation in keeping our community better. 🙏</p>
+        `
+    )
+});
