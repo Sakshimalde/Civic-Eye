@@ -1,6 +1,6 @@
 // complaint.model.js
 
-import mongoose from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 
 const complaintSchema = new mongoose.Schema({
     userId: {
@@ -24,7 +24,7 @@ const complaintSchema = new mongoose.Schema({
     },
 
     locationCoords: {
-        type: [Number],
+        type: [Number], 
         required: true
     },
 
@@ -33,49 +33,36 @@ const complaintSchema = new mongoose.Schema({
         required: true
     },
 
+    // 💡 FIX: Removed the restrictive 'enum' to allow saving Volunteer Names (strings)
     assignedTo: {
-        type: String,
+        type: String, // Now accepts any string, including volunteer names or department names
         required: true,
-        default: "Ward/zone office and central admin"
+        default: "Ward/zone office and central admin" // Use a valid initial default value
     },
 
     status: {
-        type: String,
-        enum: ["recived", "inReview", "resolved", "in progress"],
+        type: String, 
+        enum: ["recived", "inReview", "resolved", "in progress"], // Added "in progress"
         default: "recived"
     },
 
-    // ── NEW: Admin must approve before complaint is actionable ──
-    adminApproved: {
-        type: Boolean,
-        default: false   // false = waiting for admin approval
-    },
-
-    adminRejected: {
-        type: Boolean,
-        default: false   // true = admin rejected the complaint
-    },
-
-    adminNote: {
-        type: String,
-        default: ""      // admin's note on approval or rejection
-    },
-    // ────────────────────────────────────────────────────────────
-
+    // ✅ ADDED FIELDS for Volunteer Updates and Admin Review
     pendingUpdate: {
         type: Boolean,
-        default: false
+        default: false // Set to true by Volunteer, reset by Admin
     },
 
     workNotes: {
         type: String,
-        default: ""
+        default: "" // Volunteer's notes on the work done
     },
-
-    rejectionNote: {
+    
+    // Admin rejection note (optional)
+    rejectionNote: { 
         type: String,
-        default: ""
+        default: "" 
     },
+    // --------------------------------------------------------
 
     comments: [
         {
