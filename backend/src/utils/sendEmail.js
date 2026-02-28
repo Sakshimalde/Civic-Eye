@@ -1,33 +1,26 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,        // true=465(SSL), false=587(TLS) ← Render allows this
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-        rejectUnauthorized: false
-    }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
  * sendEmail(to, subject, html)
- * Sends a branded HTML email from CivicEye
+ * Sends email via Resend API (works on Render free tier)
  */
 const sendEmail = async (to, subject, html) => {
-    const mailOptions = {
-        from: `"CivicEye 🏙️" <${process.env.EMAIL_USER}>`,
-        to,
-        subject,
-        html,
-    };
-
     try {
-        await transporter.sendMail(mailOptions);
-        console.log(`[Email] Sent to ${to}: ${subject}`);
+        const { data, error } = await resend.emails.send({
+            from: 'CivicEye <onboarding@resend.dev>', // works without domain verification
+            to,
+            subject,
+            html,
+        });
+
+        if (error) {
+            console.error(`[Email] Resend error to ${to}:`, error.message);
+            return;
+        }
+
+        console.log(`[Email] Sent to ${to}: ${subject} (id: ${data.id})`);
     } catch (err) {
         console.error(`[Email] Failed to send to ${to}:`, err.message);
     }

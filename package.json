@@ -2,5 +2,8 @@
   "name": "civiceye-root",
   "version": "1.0.0",
   "private": true,
-  "description": "Root placeholder for CivicEye project. All dependencies are inside frontend/ and backend/."
+  "description": "Root placeholder for CivicEye project. All dependencies are inside frontend/ and backend/.",
+  "dependencies": {
+    "resend": "^6.9.3"
+  }
 }
