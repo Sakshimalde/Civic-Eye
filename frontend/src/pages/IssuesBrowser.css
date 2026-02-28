@@ -1523,3 +1523,72 @@ button.disabled {
   background: red;
   color: white;
 }
+
+/* ── Rejection Styles ──────────────────────────────────────────────────────── */
+.issue-card-rejected {
+    opacity: 0.85;
+    border: 1px solid #fecdd3 !important;
+    background: #fff8f8 !important;
+}
+
+.issue-card-rejected:hover {
+    border-color: #fca5a5 !important;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.1) !important;
+}
+
+.issue-card-rejected::before {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+
+.issue-rejected-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    color: #be123c;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.rejected-x {
+    width: 20px;
+    height: 20px;
+    background: #fecdd3;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 800;
+    flex-shrink: 0;
+    color: #be123c;
+    margin-top: 1px;
+}
+
+.issue-rejected-banner strong {
+    display: block;
+    font-weight: 700;
+    color: #9f1239;
+}
+
+.rejected-reason {
+    margin: 3px 0 0;
+    font-size: 0.8rem;
+    color: #be123c;
+}
+
+.status-badge.status-rejected {
+    background: #fff1f2;
+    color: #be123c;
+    border: 1px solid #fecdd3;
+}
+
+.vote-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
