@@ -18,7 +18,7 @@ app.use(
         return callback(null, true);
       }
 
-      if (origin.endsWith(".up.railway.app")) {
+      if (origin.endsWith(".vercel.app")) {
         return callback(null, true);
       }
 
