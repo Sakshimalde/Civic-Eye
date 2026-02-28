@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import sendEmail from "./src/utils/sendEmail.js";
+
 
 const app = express();
 
@@ -62,6 +64,19 @@ app.use((err, req, res, next) => {
     success: false,
     message
   });
+});
+
+app.get("/test-email", async (req, res) => {
+  try {
+      await sendEmail(
+          "sakshimalde1824@gmail.com", // put your own email here
+          "CivicEye Test Email",
+          "<h1>Email is working!</h1>"
+      );
+      res.json({ success: true, message: "Email sent!" });
+  } catch (err) {
+      res.json({ success: false, error: err.message });
+  }
 });
 
 export { app };
