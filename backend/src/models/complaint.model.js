@@ -1,6 +1,6 @@
 // complaint.model.js
 
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
 const complaintSchema = new mongoose.Schema({
     userId: {
@@ -24,7 +24,7 @@ const complaintSchema = new mongoose.Schema({
     },
 
     locationCoords: {
-        type: [Number], 
+        type: [Number],
         required: true
     },
 
@@ -33,36 +33,39 @@ const complaintSchema = new mongoose.Schema({
         required: true
     },
 
-    // 💡 FIX: Removed the restrictive 'enum' to allow saving Volunteer Names (strings)
     assignedTo: {
-        type: String, // Now accepts any string, including volunteer names or department names
+        type: String,
         required: true,
-        default: "Ward/zone office and central admin" // Use a valid initial default value
+        default: "Ward/zone office and central admin"
     },
 
     status: {
-        type: String, 
-        enum: ["recived", "inReview", "resolved", "in progress"], // Added "in progress"
+        type: String,
+        enum: ["recived", "inReview", "resolved", "in progress"],
         default: "recived"
     },
 
-    // ✅ ADDED FIELDS for Volunteer Updates and Admin Review
+    // ✅ NEW: Admin rejected this complaint — stops all further processing
+    isRejected: {
+        type: Boolean,
+        default: false
+    },
+
+    // ✅ Admin rejection reason shown to citizen
+    rejectionNote: {
+        type: String,
+        default: ""
+    },
+
     pendingUpdate: {
         type: Boolean,
-        default: false // Set to true by Volunteer, reset by Admin
+        default: false
     },
 
     workNotes: {
         type: String,
-        default: "" // Volunteer's notes on the work done
+        default: ""
     },
-    
-    // Admin rejection note (optional)
-    rejectionNote: { 
-        type: String,
-        default: "" 
-    },
-    // --------------------------------------------------------
 
     comments: [
         {

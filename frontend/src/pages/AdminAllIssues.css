@@ -1,547 +1,766 @@
-/* AllIssuesAdmin.css */
-
+/* ─── Base ─────────────────────────────────────────────────────────────────── */
 .all-issues-admin {
   min-height: 100vh;
-  background-color: #f8fafc;
+  background: #f8fafc;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Reuse header styles from AdminDashboard.css or duplicate them here */
-/* (Same header styles as AdminDashboard.css) */
+/* ─── Header (reused from AdminDashboard) ───────────────────────────────────── */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 64px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
 
-/* Hero Section */
+.admin-header-left { display: flex; align-items: center; gap: 2rem; }
+.admin-logo { display: flex; align-items: center; gap: 0.75rem; }
+.admin-logo-title { font-size: 1.1rem; font-weight: 800; color: #5b6fa8; }
+.admin-logo-subtitle { font-size: 0.7rem; color: #9ca3af; }
+
+.admin-nav { display: flex; gap: 0.25rem; }
+.admin-nav-link {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 0.875rem; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 500; color: #6b7280;
+  text-decoration: none; transition: all 0.15s;
+}
+.admin-nav-link:hover { background: #f3f4f6; color: #111; }
+.admin-nav-link.active { background: #eef2ff; color: #5b6fa8; font-weight: 600; }
+
+.user-profile { display: flex; align-items: center; gap: 0.75rem; }
+.profile-link { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+.user-initials {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #5b6fa8; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700;
+}
+.user-name { font-size: 0.875rem; font-weight: 600; color: #1f2937; }
+.logout-btn-header {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px;
+  border: 1px solid #e5e7eb; background: #fff;
+  cursor: pointer; color: #6b7280; transition: all 0.15s;
+}
+.logout-btn-header:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+/* ─── Main Content ──────────────────────────────────────────────────────────── */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  transition: margin-right 0.3s ease;
+}
+
+.has-panel .main-content {
+  margin-right: 440px;
+}
+
+/* ─── Hero ──────────────────────────────────────────────────────────────────── */
 .issues-hero {
   background: linear-gradient(135deg, #5b6fa8 0%, #667eaf 100%);
   padding: 2.5rem 2rem;
-  color: white;
+  color: #fff;
   text-align: center;
 }
+.issues-hero-content { max-width: 1280px; margin: 0 auto; }
+.issues-hero-content h1 { font-size: 2rem; font-weight: 700; margin: 0.75rem 0 0.5rem; }
+.issues-hero-content p { font-size: 1rem; opacity: 0.9; margin: 0; }
 
-.issues-hero-content {
-  max-width: 1280px;
-  margin: 0 auto;
-}
-
-.issues-hero-content h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0.75rem 0 0.5rem 0;
-}
-
-.issues-hero-content p {
-  font-size: 1rem;
-  opacity: 0.95;
-  margin: 0;
-}
-
-/* Stats Grid */
+/* ─── Stats Grid ────────────────────────────────────────────────────────────── */
 .issues-stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
+  gap: 1.25rem;
   max-width: 1280px;
   margin: -1.5rem auto 2rem;
   padding: 0 2rem;
 }
-
 .issues-stat-card {
-  background-color: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  background: #fff; border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
-
-.issues-stat-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.issues-stat-info {
-  flex: 1;
-}
-
-.issues-stat-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.issues-stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
+.issues-stat-content { display: flex; justify-content: space-between; align-items: center; }
+.issues-stat-label { font-size: 0.8rem; color: #6b7280; font-weight: 500; margin-bottom: 0.4rem; }
+.issues-stat-value { font-size: 1.875rem; font-weight: 800; color: #1f2937; }
 .issues-stat-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 48px; height: 48px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
 }
 
-/* Issues Table Section */
+/* ─── Table Section ─────────────────────────────────────────────────────────── */
 .issues-table-section {
-  background-color: white;
+  background: #fff;
   border-radius: 16px;
   padding: 2rem;
-  margin: 2rem auto;
-  max-width: 1280px;
-  margin-left: 2rem;
-  margin-right: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin: 0 2rem 2rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
-
-.issues-table-header {
-  margin-bottom: 1.5rem;
-}
-
 .issues-table-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #5b6fa8;
-  margin-bottom: 0.5rem;
+  display: flex; align-items: center; gap: 0.5rem;
+  color: #5b6fa8; margin-bottom: 0.4rem;
 }
+.issues-table-title h2 { font-size: 1.2rem; font-weight: 700; color: #1f2937; margin: 0; }
+.issues-table-subtitle { font-size: 0.85rem; color: #6b7280; margin: 0 0 1.25rem; }
 
-.issues-table-title h2 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.issues-table-subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0;
-}
-
-/* Table Actions */
-.table-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
+.table-actions { margin-bottom: 1.25rem; }
 .search-box {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.625rem 1rem;
-  background-color: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  width: 300px;
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: #f9fafb; border: 1px solid #e5e7eb;
+  border-radius: 8px; width: 280px; color: #9ca3af;
 }
-
 .search-box input {
-  flex: 1;
-  border: none;
-  background: none;
-  outline: none;
-  font-size: 0.875rem;
-  color: #1f2937;
+  flex: 1; border: none; background: none;
+  outline: none; font-size: 0.875rem; color: #1f2937;
 }
+.search-box input::placeholder { color: #9ca3af; }
 
-.search-box input::placeholder {
-  color: #9ca3af;
-}
-
-.export-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  background-color: #5b6fa8;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.export-btn:hover {
-  background-color: #4a5a87;
-}
-
-/* Table */
-.issues-table-container {
-  overflow-x: auto;
-}
-
-.issues-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.issues-table thead {
-  background-color: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
-}
-
+/* ─── Table ─────────────────────────────────────────────────────────────────── */
+.issues-table-container { overflow-x: auto; }
+.issues-table { width: 100%; border-collapse: collapse; }
+.issues-table thead { background: #f9fafb; border-bottom: 2px solid #e5e7eb; }
 .issues-table th {
-  padding: 0.875rem 1rem;
-  text-align: left;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  padding: 0.875rem 1rem; text-align: left;
+  font-size: 0.75rem; font-weight: 700;
+  color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em;
 }
+.issues-table td { padding: 0.875rem 1rem; font-size: 0.875rem; color: #1f2937; }
 
-.issues-table tbody tr {
+/* Clickable rows */
+.issue-row {
   border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.2s;
+  cursor: pointer;
+  transition: background 0.15s;
 }
+.issue-row:hover { background: #f8faff; }
+.issue-row-active { background: #eef2ff !important; }
+.issue-row-active td { color: #1e40af; }
 
-.issues-table tbody tr:hover {
-  background-color: #f9fafb;
-}
+.issue-title-cell { font-weight: 600; max-width: 220px; }
+.chevron-cell { text-align: right; width: 32px; }
 
-.issues-table td {
-  padding: 1rem;
-  font-size: 0.875rem;
-  color: #1f2937;
-}
-
-.issue-title-cell {
-  font-weight: 500;
-  max-width: 250px;
-}
+/* Assigned cell */
+.assigned-name-text { font-weight: 500; color: #1f2937; }
+.unassigned-text { color: #9ca3af; font-style: italic; font-size: 0.8rem; }
 
 /* Status Badge */
 .status-badge {
-  display: inline-block;
-  padding: 0.375rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: lowercase;
-}
-
-.status-inprogress {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
-
-.status-resolved {
-  background-color: #dcfce7;
-  color: #166534;
-}
-
-.status-pending {
-  background-color: #ffedd5;
-  color: #9a3412;
+  display: inline-flex; align-items: center;
+  padding: 0.3rem 0.7rem; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+  white-space: nowrap;
 }
 
 /* Priority Badge */
 .priority-badge {
   display: inline-block;
-  padding: 0.375rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: lowercase;
+  padding: 0.3rem 0.7rem; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase;
+}
+.priority-high   { background: #fee2e2; color: #991b1b; }
+.priority-medium { background: #fef3c7; color: #92400e; }
+.priority-low    { background: #e0e7ff; color: #3730a3; }
+
+/* States */
+.loading-state-admin, .error-state-admin, .empty-state-admin {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.75rem; padding: 3rem;
+  color: #9ca3af; font-size: 0.9rem;
+}
+.loading-spinner {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid #e5e7eb; border-top-color: #5b6fa8;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 0.7s linear infinite; }
+
+/* ─── Detail Panel ──────────────────────────────────────────────────────────── */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.15);
+  z-index: 200;
+  animation: fadeIn 0.2s ease;
 }
 
-.priority-high {
-  background-color: #fee2e2;
-  color: #991b1b;
-}
-
-.priority-medium {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.priority-low {
-  background-color: #e0e7ff;
-  color: #3730a3;
-}
-
-/* Assigned Cell */
-.assigned-cell {
+.detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 440px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+  z-index: 201;
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  animation: slideIn 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
-.assigned-name {
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Panel Header */
+.detail-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 1.5rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fff;
+  flex-shrink: 0;
+}
+.detail-panel-eyebrow {
+  font-size: 0.7rem; font-weight: 700;
+  color: #5b6fa8; text-transform: uppercase;
+  letter-spacing: 0.08em; margin: 0 0 0.3rem;
+}
+.detail-panel-title {
+  font-size: 1.1rem; font-weight: 700;
+  color: #111827; margin: 0;
+  line-height: 1.4;
+}
+.detail-close-btn {
+  flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid #e5e7eb; background: #f9fafb;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #6b7280; transition: all 0.15s;
+  margin-left: 1rem;
+}
+.detail-close-btn:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+/* Panel Body */
+.detail-panel-body {
   flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 2rem;
 }
 
-.reassign-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.625rem;
-  background: none;
+/* Badges */
+.detail-badges {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.detail-status-badge {
+  display: inline-flex; align-items: center;
+  padding: 0.35rem 0.8rem; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+}
+.detail-priority-badge {
+  display: inline-flex; align-items: center;
+  padding: 0.35rem 0.8rem; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 700;
+}
+
+/* Photo */
+.detail-photo-section { margin-bottom: 1.25rem; }
+.detail-photo {
+  width: 100%; max-height: 220px;
+  object-fit: cover; border-radius: 10px;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s;
+}
+.detail-no-photo {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.5rem; padding: 2rem;
+  background: #f9fafb; border: 1px dashed #d1d5db;
+  border-radius: 10px; color: #9ca3af; font-size: 0.85rem;
 }
 
-.reassign-btn:hover {
-  background-color: #f9fafb;
-  border-color: #5b6fa8;
-  color: #5b6fa8;
+/* Info Grid */
+.detail-info-grid {
+  background: #f9fafb; border-radius: 10px;
+  padding: 1rem; margin-bottom: 1.25rem;
+  display: flex; flex-direction: column; gap: 0.6rem;
+}
+.detail-info-row {
+  display: grid;
+  grid-template-columns: 16px 100px 1fr;
+  align-items: start; gap: 0.5rem;
+  font-size: 0.83rem;
+}
+.detail-info-row.full { grid-template-columns: 16px 100px 1fr; }
+.detail-info-icon { color: #9ca3af; margin-top: 1px; flex-shrink: 0; }
+.detail-info-label { color: #6b7280; font-weight: 600; }
+.detail-info-value { color: #1f2937; font-weight: 500; word-break: break-word; }
+
+/* Sections */
+.detail-section { margin-bottom: 1.25rem; }
+.detail-section-heading {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.78rem; font-weight: 700;
+  color: #6b7280; text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 0.6rem;
+}
+.detail-section-text {
+  font-size: 0.875rem; color: #374151;
+  line-height: 1.65; margin: 0;
+  background: #f9fafb; border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+.detail-divider {
+  border: none; border-top: 1px solid #f3f4f6;
+  margin: 1.25rem 0;
 }
 
-/* Action Button */
-.action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
+/* Assign Row */
+.detail-assign-row {
+  display: flex; gap: 0.6rem;
 }
-
-.view-btn {
-  background-color: #f3f4f6;
-  color: #6b7280;
+.detail-volunteer-select {
+  flex: 1;
+  padding: 0.6rem 0.875rem;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  font-size: 0.875rem; color: #1f2937;
+  background: #fff; outline: none;
+  transition: border-color 0.15s;
 }
+.detail-volunteer-select:focus { border-color: #5b6fa8; }
 
-.view-btn:hover {
-  background-color: #5b6fa8;
-  color: white;
+.detail-assign-btn {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.1rem;
+  background: #5b6fa8; color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 600;
+  cursor: pointer; transition: background 0.15s;
+  white-space: nowrap;
 }
+.detail-assign-btn:hover:not(:disabled) { background: #4a5a87; }
+.detail-assign-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* Responsive */
+/* Reject Button */
+.detail-reject-btn {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  background: #fff; color: #dc2626;
+  border: 1.5px solid #fca5a5; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.detail-reject-btn:hover:not(:disabled) { background: #fee2e2; border-color: #f87171; }
+.detail-reject-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ─── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 1280px) {
-  .issues-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .issues-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .detail-panel { width: 100vw; }
+  .has-panel .main-content { margin-right: 0; }
 }
 
 @media (max-width: 768px) {
-  .issues-stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .table-actions {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .search-box {
-    width: 100%;
-  }
-
-  .issues-table-container {
-    overflow-x: scroll;
-  }
-
-  .issues-table {
-    min-width: 800px;
-  }
+  .issues-stats-grid { grid-template-columns: 1fr; padding: 0 1rem; }
+  .issues-table-section { margin: 0 1rem 1rem; padding: 1.25rem; }
+  .admin-nav { display: none; }
+  .issues-table { min-width: 600px; }
 }
-/* Add these styles to your existing AdminAllIssues.css */
-
-/* --- Assigned Cell Combined --- */
-.issues-table th:last-child,
-.issues-table td:last-child {
-    /* Remove default padding from original Actions column */
-    padding: 0; 
+/* ─── Base ─────────────────────────────────────────────────────────────────── */
+.all-issues-admin {
+  min-height: 100vh;
+  background: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
-/* New Combined Cell Styling (Assigned To + Actions) */
-.assigned-cell-combined {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 1rem; /* Restore padding to this cell */
+/* ─── Header (reused from AdminDashboard) ───────────────────────────────────── */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 64px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-/* Assigned Display (Replaces assigned-name and reassign-btn div) */
-.assigned-display {
-    display: flex;
-    align-items: center;
-    flex-grow: 1;
-    gap: 8px;
-    padding: 5px 0;
+.admin-header-left { display: flex; align-items: center; gap: 2rem; }
+.admin-logo { display: flex; align-items: center; gap: 0.75rem; }
+.admin-logo-title { font-size: 1.1rem; font-weight: 800; color: #5b6fa8; }
+.admin-logo-subtitle { font-size: 0.7rem; color: #9ca3af; }
+
+.admin-nav { display: flex; gap: 0.25rem; }
+.admin-nav-link {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 0.875rem; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 500; color: #6b7280;
+  text-decoration: none; transition: all 0.15s;
+}
+.admin-nav-link:hover { background: #f3f4f6; color: #111; }
+.admin-nav-link.active { background: #eef2ff; color: #5b6fa8; font-weight: 600; }
+
+.user-profile { display: flex; align-items: center; gap: 0.75rem; }
+.profile-link { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+.user-initials {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #5b6fa8; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700;
+}
+.user-name { font-size: 0.875rem; font-weight: 600; color: #1f2937; }
+.logout-btn-header {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px;
+  border: 1px solid #e5e7eb; background: #fff;
+  cursor: pointer; color: #6b7280; transition: all 0.15s;
+}
+.logout-btn-header:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+/* ─── Main Content ──────────────────────────────────────────────────────────── */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  transition: margin-right 0.3s ease;
 }
 
-.assigned-name-display {
-    font-weight: 600;
-    color: #1f2937;
-    flex-grow: 1;
+.has-panel .main-content {
+  margin-right: 440px;
 }
 
-/* Assign/Reassign Button Styling */
-.reassign-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    color: #4b5563;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 600;
+/* ─── Hero ──────────────────────────────────────────────────────────────────── */
+.issues-hero {
+  background: linear-gradient(135deg, #5b6fa8 0%, #667eaf 100%);
+  padding: 2.5rem 2rem;
+  color: #fff;
+  text-align: center;
+}
+.issues-hero-content { max-width: 1280px; margin: 0 auto; }
+.issues-hero-content h1 { font-size: 2rem; font-weight: 700; margin: 0.75rem 0 0.5rem; }
+.issues-hero-content p { font-size: 1rem; opacity: 0.9; margin: 0; }
+
+/* ─── Stats Grid ────────────────────────────────────────────────────────────── */
+.issues-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  max-width: 1280px;
+  margin: -1.5rem auto 2rem;
+  padding: 0 2rem;
+}
+.issues-stat-card {
+  background: #fff; border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.issues-stat-content { display: flex; justify-content: space-between; align-items: center; }
+.issues-stat-label { font-size: 0.8rem; color: #6b7280; font-weight: 500; margin-bottom: 0.4rem; }
+.issues-stat-value { font-size: 1.875rem; font-weight: 800; color: #1f2937; }
+.issues-stat-icon {
+  width: 48px; height: 48px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
 }
 
-.reassign-btn.assign {
-    background-color: #dbeafe; /* Light blue for "Assign" */
-    color: #1e40af;
-    border-color: #93c5fd;
+/* ─── Table Section ─────────────────────────────────────────────────────────── */
+.issues-table-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 0 2rem 2rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.issues-table-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  color: #5b6fa8; margin-bottom: 0.4rem;
+}
+.issues-table-title h2 { font-size: 1.2rem; font-weight: 700; color: #1f2937; margin: 0; }
+.issues-table-subtitle { font-size: 0.85rem; color: #6b7280; margin: 0 0 1.25rem; }
+
+.table-actions { margin-bottom: 1.25rem; }
+.search-box {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: #f9fafb; border: 1px solid #e5e7eb;
+  border-radius: 8px; width: 280px; color: #9ca3af;
+}
+.search-box input {
+  flex: 1; border: none; background: none;
+  outline: none; font-size: 0.875rem; color: #1f2937;
+}
+.search-box input::placeholder { color: #9ca3af; }
+
+/* ─── Table ─────────────────────────────────────────────────────────────────── */
+.issues-table-container { overflow-x: auto; }
+.issues-table { width: 100%; border-collapse: collapse; }
+.issues-table thead { background: #f9fafb; border-bottom: 2px solid #e5e7eb; }
+.issues-table th {
+  padding: 0.875rem 1rem; text-align: left;
+  font-size: 0.75rem; font-weight: 700;
+  color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.issues-table td { padding: 0.875rem 1rem; font-size: 0.875rem; color: #1f2937; }
+
+/* Clickable rows */
+.issue-row {
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.issue-row:hover { background: #f8faff; }
+.issue-row-active { background: #eef2ff !important; }
+.issue-row-active td { color: #1e40af; }
+
+.issue-title-cell { font-weight: 600; max-width: 220px; }
+.chevron-cell { text-align: right; width: 32px; }
+
+/* Assigned cell */
+.assigned-name-text { font-weight: 500; color: #1f2937; }
+.unassigned-text { color: #9ca3af; font-style: italic; font-size: 0.8rem; }
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex; align-items: center;
+  padding: 0.3rem 0.7rem; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+  white-space: nowrap;
 }
 
-.reassign-btn:hover {
-    background-color: #e5e7eb;
+/* Priority Badge */
+.priority-badge {
+  display: inline-block;
+  padding: 0.3rem 0.7rem; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase;
+}
+.priority-high   { background: #fee2e2; color: #991b1b; }
+.priority-medium { background: #fef3c7; color: #92400e; }
+.priority-low    { background: #e0e7ff; color: #3730a3; }
+
+/* States */
+.loading-state-admin, .error-state-admin, .empty-state-admin {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.75rem; padding: 3rem;
+  color: #9ca3af; font-size: 0.9rem;
+}
+.loading-spinner {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 3px solid #e5e7eb; border-top-color: #5b6fa8;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 0.7s linear infinite; }
+
+/* ─── Detail Panel ──────────────────────────────────────────────────────────── */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.15);
+  z-index: 200;
+  animation: fadeIn 0.2s ease;
 }
 
-.reassign-btn.assign:hover {
-    background-color: #93c5fd;
-    color: #1e40af;
+.detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 440px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
-/* --- Inline Reassign Control Styles --- */
-.reassign-control-inline {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    width: 200px; /* Adjust width as necessary */
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
 }
 
-.volunteer-select-admin {
-    padding: 8px;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    width: 100%;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-.reassign-actions-group {
-    display: flex;
-    gap: 5px;
+/* Panel Header */
+.detail-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 1.5rem 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fff;
+  flex-shrink: 0;
+}
+.detail-panel-eyebrow {
+  font-size: 0.7rem; font-weight: 700;
+  color: #5b6fa8; text-transform: uppercase;
+  letter-spacing: 0.08em; margin: 0 0 0.3rem;
+}
+.detail-panel-title {
+  font-size: 1.1rem; font-weight: 700;
+  color: #111827; margin: 0;
+  line-height: 1.4;
+}
+.detail-close-btn {
+  flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid #e5e7eb; background: #f9fafb;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #6b7280; transition: all 0.15s;
+  margin-left: 1rem;
+}
+.detail-close-btn:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+/* Panel Body */
+.detail-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 2rem;
 }
 
-.action-btn.assign-confirm-btn, .action-btn.assign-cancel-btn {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    flex: 1;
+/* Badges */
+.detail-badges {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.detail-status-badge {
+  display: inline-flex; align-items: center;
+  padding: 0.35rem 0.8rem; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+}
+.detail-priority-badge {
+  display: inline-flex; align-items: center;
+  padding: 0.35rem 0.8rem; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 700;
 }
 
-.action-btn.assign-confirm-btn {
-    background-color: #059669; /* Green for confirm */
-    color: white;
+/* Photo */
+.detail-photo-section { margin-bottom: 1.25rem; }
+.detail-photo {
+  width: 100%; max-height: 220px;
+  object-fit: cover; border-radius: 10px;
+  border: 1px solid #e5e7eb;
+}
+.detail-no-photo {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.5rem; padding: 2rem;
+  background: #f9fafb; border: 1px dashed #d1d5db;
+  border-radius: 10px; color: #9ca3af; font-size: 0.85rem;
 }
 
-.action-btn.assign-confirm-btn:disabled {
-    background-color: #a7f3d0;
-    cursor: not-allowed;
+/* Info Grid */
+.detail-info-grid {
+  background: #f9fafb; border-radius: 10px;
+  padding: 1rem; margin-bottom: 1.25rem;
+  display: flex; flex-direction: column; gap: 0.6rem;
+}
+.detail-info-row {
+  display: grid;
+  grid-template-columns: 16px 100px 1fr;
+  align-items: start; gap: 0.5rem;
+  font-size: 0.83rem;
+}
+.detail-info-row.full { grid-template-columns: 16px 100px 1fr; }
+.detail-info-icon { color: #9ca3af; margin-top: 1px; flex-shrink: 0; }
+.detail-info-label { color: #6b7280; font-weight: 600; }
+.detail-info-value { color: #1f2937; font-weight: 500; word-break: break-word; }
+
+/* Sections */
+.detail-section { margin-bottom: 1.25rem; }
+.detail-section-heading {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.78rem; font-weight: 700;
+  color: #6b7280; text-transform: uppercase;
+  letter-spacing: 0.06em; margin-bottom: 0.6rem;
+}
+.detail-section-text {
+  font-size: 0.875rem; color: #374151;
+  line-height: 1.65; margin: 0;
+  background: #f9fafb; border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+.detail-divider {
+  border: none; border-top: 1px solid #f3f4f6;
+  margin: 1.25rem 0;
 }
 
-.action-btn.assign-cancel-btn {
-    background-color: #f3f4f6;
-    color: #4b5563;
-    border: 1px solid #d1d5db;
+/* Assign Row */
+.detail-assign-row {
+  display: flex; gap: 0.6rem;
+}
+.detail-volunteer-select {
+  flex: 1;
+  padding: 0.6rem 0.875rem;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  font-size: 0.875rem; color: #1f2937;
+  background: #fff; outline: none;
+  transition: border-color 0.15s;
+}
+.detail-volunteer-select:focus { border-color: #5b6fa8; }
+
+.detail-assign-btn {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.1rem;
+  background: #5b6fa8; color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 600;
+  cursor: pointer; transition: background 0.15s;
+  white-space: nowrap;
+}
+.detail-assign-btn:hover:not(:disabled) { background: #4a5a87; }
+.detail-assign-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Reject Button */
+.detail-reject-btn {
+  width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  background: #fff; color: #dc2626;
+  border: 1.5px solid #fca5a5; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.detail-reject-btn:hover:not(:disabled) { background: #fee2e2; border-color: #f87171; }
+.detail-reject-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ─── Responsive ────────────────────────────────────────────────────────────── */
+@media (max-width: 1280px) {
+  .issues-stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* Existing action-btn view-btn styling */
-.action-btn.view-btn {
-    margin-left: auto; /* Pushes the view button to the right */
-    background-color: #e0e7ff;
-    color: #4338ca;
+@media (max-width: 900px) {
+  .detail-panel { width: 100vw; }
+  .has-panel .main-content { margin-right: 0; }
 }
 
-.action-btn.view-btn:hover {
-    background-color: #4338ca;
-    color: white;
+@media (max-width: 768px) {
+  .issues-stats-grid { grid-template-columns: 1fr; padding: 0 1rem; }
+  .issues-table-section { margin: 0 1rem 1rem; padding: 1.25rem; }
+  .admin-nav { display: none; }
+  .issues-table { min-width: 600px; }
 }
-/* ... (Your existing AdminAllIssues.css styles) ... */
-
-/* --- Assigned Cell Combined --- */
-/* CRITICAL: Ensure the table structure adjusts since the last column is gone */
-.issues-table th:last-child,
-.issues-table td:last-child {
-    /* Set the last column styling if needed, but the AssignedTo cell should dominate */
-}
-
-/* New Combined Cell Styling (Assigned To + Actions) */
-.assigned-cell-combined {
-    display: flex;
-    /* Removed: align-items: center; */
-    gap: 10px;
-    padding: 0.875rem 1rem; /* Adjusted padding to be consistent with other td cells */
-    flex-direction: column; /* Stack the assignee info and the view button vertically */
-}
-
-/* Assigned Display (Replaces assigned-name and reassign-btn div) */
-.assigned-display {
-    display: flex;
-    align-items: center;
-    flex-grow: 1;
-    gap: 8px;
-    padding: 5px 0;
-}
-
-.assigned-name-display {
-    font-weight: 600;
-    color: #1f2937;
-    flex-grow: 1;
-}
-
-/* Assign/Reassign Button Styling (unchanged, but functional) */
-.reassign-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.8125rem;
-    color: #4b5563;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 600;
-}
-
-.reassign-btn.assign {
-    background-color: #dbeafe; 
-    color: #1e40af;
-    border-color: #93c5fd;
-}
-
-.reassign-btn:hover {
-    background-color: #e5e7eb;
-}
-
-.reassign-btn.assign:hover {
-    background-color: #93c5fd;
-    color: #1e40af;
-}
-
-/* --- Inline Reassign Control Styles --- */
-.reassign-control-inline {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    width: 200px;
-    padding-right: 1rem; /* Adjust padding for visual alignment */
-}
-
-/* Removed View button styles */
-/* .action-btn.view-btn, .action-btn.view-btn:hover { ... } */
-
-/* ... (Rest of your original CSS remains) ... */

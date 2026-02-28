@@ -12,6 +12,7 @@ import {
     workStartedEmail,
     issueResolvedEmail,
     resolutionRejectedEmail,
+    complaintRejectedEmail,
 } from "../utils/emailTemplates.js";
 
 // Helper: format date nicely
@@ -147,6 +148,22 @@ const updateComplaintAssignment = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, updatedComplaint, "Complaint assigned successfully"));
 });
 
+// ================= Get Single Complaint (for Admin detail panel) =================
+const getSingleComplaint = asyncHandler(async (req, res) => {
+    const { complaintId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(complaintId)) {
+        throw new ApiError(400, "Invalid Complaint ID");
+    }
+
+    const complaint = await Complaint.findById(complaintId)
+        .populate("userId", "name email profilePhoto");
+
+    if (!complaint) throw new ApiError(404, "Complaint not found");
+
+    res.status(200).json(new ApiResponse(200, complaint, "Complaint fetched successfully"));
+});
+
 // ================= Complaint List (User's own) =================
 const viewComplaint = asyncHandler(async (req, res) => {
     const allComplaints = await Complaint.find({ userId: req.user._id });
@@ -170,6 +187,7 @@ const editComplaint = asyncHandler(async (req, res, next) => {
 
     const previousStatus = complaint.status;
     const previousPending = complaint.pendingUpdate;
+    const isBeingRejected = req.body.isRejected === true || req.body.isRejected === 'true';
 
     let complaintPhotoUrl = complaint.photo;
     if (req.file?.path) {
@@ -188,9 +206,10 @@ const editComplaint = asyncHandler(async (req, res, next) => {
                 assignedTo: assignedTo || complaint.assignedTo,
                 locationCoords: locationCoords || complaint.locationCoords,
                 photo: complaintPhotoUrl,
-                status: status || complaint.status,
+                status: isBeingRejected ? 'resolved' : (status || complaint.status),
                 pendingUpdate: pendingUpdate !== undefined ? pendingUpdate : complaint.pendingUpdate,
                 rejectionNote: rejectionNote || complaint.rejectionNote,
+                isRejected: isBeingRejected ? true : complaint.isRejected,
                 updatedAt: new Date()
             }
         },
@@ -208,7 +227,7 @@ const editComplaint = asyncHandler(async (req, res, next) => {
             const shortId = updatedComplaint._id.toString().slice(-8).toUpperCase();
 
             // Admin APPROVED resolution (pendingUpdate false + status resolved)
-            if (previousPending === true && pendingUpdate === false && newStatus === 'resolved') {
+            if (previousPending === true && pendingUpdate === false && newStatus === 'resolved' && !isBeingRejected) {
                 const { subject, html } = issueResolvedEmail({
                     citizenName: citizen.name,
                     title: updatedComplaint.title,
@@ -227,6 +246,17 @@ const editComplaint = asyncHandler(async (req, res, next) => {
                     title: updatedComplaint.title,
                     volunteerName: updatedComplaint.assignedTo,
                     rejectionNote: rejectionNote || updatedComplaint.rejectionNote,
+                    complaintId: shortId,
+                });
+                await sendEmail(citizen.email, subject, html);
+            }
+
+            // Admin REJECTED the complaint itself
+            else if (isBeingRejected) {
+                const { subject, html } = complaintRejectedEmail({
+                    citizenName: citizen.name,
+                    title: updatedComplaint.title,
+                    rejectionNote: rejectionNote || 'Your complaint did not meet the submission criteria.',
                     complaintId: shortId,
                 });
                 await sendEmail(citizen.email, subject, html);
@@ -356,5 +386,6 @@ export {
     updateComplaintAssignment,
     getAssignedIssues,
     volunteerUpdateStatus,
-    getPendingRequests
+    getPendingRequests,
+    getSingleComplaint,
 };
