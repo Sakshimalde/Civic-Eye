@@ -23,6 +23,12 @@ const complaintSchema = new mongoose.Schema({
         type: String,
     },
 
+    // ✅ Volunteer's proof photo submitted when marking resolved — kept separate from original complaint photo
+    proofPhoto: {
+        type: String,
+        default: ""
+    },
+
     locationCoords: {
         type: [Number],
         required: true
@@ -45,7 +51,7 @@ const complaintSchema = new mongoose.Schema({
         default: "recived"
     },
 
-    // ✅ NEW: Admin rejected this complaint — stops all further processing
+    // ✅ Admin rejected this complaint entirely — stops all further processing
     isRejected: {
         type: Boolean,
         default: false
@@ -57,9 +63,22 @@ const complaintSchema = new mongoose.Schema({
         default: ""
     },
 
+    // ✅ Volunteer has submitted a resolution awaiting admin approval
     pendingUpdate: {
         type: Boolean,
         default: false
+    },
+
+    // ✅ Admin rejected the volunteer's resolution — volunteer must retry
+    resolutionRejected: {
+        type: Boolean,
+        default: false
+    },
+
+    // ✅ Reason admin rejected the resolution — shown to volunteer on their assigned issues page
+    resolutionRejectionNote: {
+        type: String,
+        default: ""
     },
 
     workNotes: {

@@ -37,7 +37,10 @@ const MyAssignedIssues = () => {
 
                 const normalizedIssues = response.data.data.map(issue => ({
                     ...issue,
-                    status: issue.status.toLowerCase()
+                    status: issue.status.toLowerCase(),
+                    pendingUpdate: issue.pendingUpdate || false,
+                    resolutionRejected: issue.resolutionRejected || false,
+                    resolutionRejectionNote: issue.resolutionRejectionNote || '',
                 }));
                 setIssues(normalizedIssues);
             } catch (error) {
@@ -94,15 +97,19 @@ const MyAssignedIssues = () => {
     i._id === selectedIssue._id 
         ? { 
             ...i, 
-            status: updateForm.status, 
+            status: updateForm.status === 'resolved' ? i.status : updateForm.status,
             workNotes: updateForm.workNotes,
-            
+            pendingUpdate: updateForm.status === 'resolved' ? true : i.pendingUpdate,
+            resolutionRejected: false,
+            resolutionRejectionNote: '',
         }
         : i
 ));
 
-
-            alert("Status updated successfully!");
+            const successMsg = updateForm.status === 'resolved'
+                ? "Resolution submitted! Awaiting admin approval."
+                : "Status updated successfully!";
+            alert(successMsg);
             setShowUpdateModal(false);
             setSelectedIssue(null);
             setUpdateForm({ status: 'inReview', proofPhoto: null, workNotes: '' });
@@ -230,15 +237,66 @@ const activeIssues = issues; // Show everything
                                     <div className="meta-item"><User size={14} /><span>By: {issue.userId?.name}</span></div>
                                 </div>
                                 <div className="assignment-dates">Assigned To: {issue.assignedTo}</div>
-                                {/* {issue.pendingUpdate && (
-                                    <div className="pending-notice"><Clock size={16} /> Update request pending admin review</div>
-                                )} */}
+
+                                {/* ── Pending approval banner ── */}
+                                {issue.pendingUpdate && (
+                                    <div style={{
+                                        marginTop: 10,
+                                        background: '#fff7ed',
+                                        border: '1px solid #fed7aa',
+                                        borderRadius: 8,
+                                        padding: '9px 13px',
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: 8,
+                                        fontSize: 13,
+                                        color: '#92400e'
+                                    }}>
+                                        <Clock size={15} style={{ marginTop: 1, flexShrink: 0 }} />
+                                        <div>
+                                            <strong>Awaiting Admin Approval</strong>
+                                            <div style={{ marginTop: 2, color: '#a16207' }}>
+                                                Your resolution has been submitted and is pending review.
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ── Resolution rejected banner ── */}
+                                {issue.resolutionRejected && !issue.pendingUpdate && (
+                                    <div style={{
+                                        marginTop: 10,
+                                        background: '#fff1f2',
+                                        border: '1px solid #fecdd3',
+                                        borderRadius: 8,
+                                        padding: '9px 13px',
+                                        fontSize: 13,
+                                        color: '#be123c'
+                                    }}>
+                                        <div style={{ fontWeight: 700, marginBottom: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <X size={14} /> Resolution Rejected by Admin
+                                        </div>
+                                        <div>
+                                            <strong>Reason: </strong>
+                                            {issue.resolutionRejectionNote || 'No reason provided.'}
+                                        </div>
+                                        <div style={{ marginTop: 5, color: '#9ca3af', fontSize: 12 }}>
+                                            Please address the feedback and resubmit below.
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <button
     className={`update-btn ${issue.status === 'resolved' ? 'resolved-btn' : ''}`}
     onClick={() => handleUpdateClick(issue)}
+    disabled={issue.pendingUpdate}
+    title={issue.pendingUpdate ? 'Awaiting admin approval — cannot update yet' : 'Update status'}
+    style={issue.pendingUpdate ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
 >
-    <Edit size={16} /> Update Status
+    {issue.pendingUpdate
+        ? <><Clock size={16} /> Pending Approval</>
+        : <><Edit size={16} /> Update Status</>
+    }
 </button>
 
                             
@@ -317,6 +375,26 @@ const activeIssues = issues; // Show everything
                                         <option value="resolved">Resolved</option>
                                     </select>
                                     <small>Choose the appropriate status for this issue</small>
+                                    {updateForm.status === 'resolved' && (
+                                        <div style={{
+                                            marginTop: 8,
+                                            background: '#fff7ed',
+                                            border: '1px solid #fed7aa',
+                                            borderRadius: 6,
+                                            padding: '7px 11px',
+                                            fontSize: 12,
+                                            color: '#92400e',
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            gap: 6
+                                        }}>
+                                            <Clock size={13} style={{ marginTop: 1, flexShrink: 0 }} />
+                                            <span>
+                                                Marking as <strong>Resolved</strong> will submit your update for admin approval.
+                                                The issue will only be officially resolved once the admin reviews your proof photo.
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -339,7 +417,7 @@ const activeIssues = issues; // Show everything
 
                             <div className="modal-actions">
                                 <button type="submit" className="btn-submit" disabled={isSubmitting}>
-                                    {isSubmitting ? <><Loader2 size={20} className="spinner" /> 'Submitting...'</> : <><CheckCircle size={20} /> 'Submit for Approval'</>}
+                                    {isSubmitting ? <><Loader2 size={20} className="spinner" /> Submitting...</> : <><CheckCircle size={20} /> Submit for Approval</>}
                                 </button>
                                 <button type="button" className="btn-cancel" onClick={() => setShowUpdateModal(false)}>Cancel</button>
                             </div>

@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import {
     LayoutDashboard, AlertCircle, Users, Clock,
-    CheckCircle, BarChart3, Search, UserCheck, ArrowRight,
-    User as UserIcon, Loader2, X, MapPin, Calendar, Tag,
-    FileText, MessageSquare, ChevronRight, Image as ImageIcon
+    CheckCircle, XCircle, ArrowRight, Loader2,
+    Image as ImageIcon, FileText, MapPin, User as UserIcon,
+    Calendar, Tag, UserCheck, ZoomIn, X, ChevronRight
 } from 'lucide-react';
-import './AdminAllIssues.css';
+import './AdminAllIssues.css'; // reuse existing styles
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API_BASE_URL = `${BACKEND_URL}/api/v1`;
@@ -21,98 +21,83 @@ const DEPARTMENTS = [
     "Ward/zone office and central admin"
 ];
 
-const mapStatus = (s) => {
-    switch (s) {
-        case 'recived':     return 'Pending';
-        case 'inReview':    return 'In Review';
-        case 'resolved':    return 'Resolved';
-        case 'in progress': return 'In Progress';
-        default:            return 'Pending';
-    }
-};
+// ── Photo Lightbox ─────────────────────────────────────────────────────────
+const PhotoLightbox = ({ src, onClose }) => (
+    <div
+        style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.85)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}
+        onClick={onClose}
+    >
+        <button
+            onClick={onClose}
+            style={{
+                position: 'absolute', top: 20, right: 24,
+                background: 'none', border: 'none', color: '#fff',
+                cursor: 'pointer', fontSize: 28, lineHeight: 1
+            }}
+        >✕</button>
+        <img
+            src={src}
+            alt="Proof"
+            style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, objectFit: 'contain' }}
+            onClick={(e) => e.stopPropagation()}
+        />
+    </div>
+);
 
-const statusColorMap = {
-    'pending':     { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
-    'in review':   { bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe' },
-    'resolved':    { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
-    'in progress': { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
-    'rejected':    { bg: '#fff1f2', color: '#be123c', border: '#fecdd3' },
-};
-
-// ── Issue Detail Panel ─────────────────────────────────────────────────────
-const IssueDetailPanel = ({ issue, volunteers, onClose, onAssign, onReject }) => {
-    const [selectedVolunteer, setSelectedVolunteer] = useState('');
-    const [assigning, setAssigning] = useState(false);
+// ── Resolution Detail Panel ────────────────────────────────────────────────
+const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
+    const [lightbox, setLightbox] = useState(false);
+    const [approving, setApproving] = useState(false);
     const [rejecting, setRejecting] = useState(false);
-    const [fullData, setFullData] = useState(null);
-    const [fetchingFull, setFetchingFull] = useState(false);
-    const [imgError, setImgError] = useState(false);
+    const [rejectNote, setRejectNote] = useState('');
+    const [showRejectForm, setShowRejectForm] = useState(false);
+    const [proofImgError, setProofImgError] = useState(false);
+    const [origImgError, setOrigImgError] = useState(false);
 
-    // Fetch full complaint from backend when panel opens — gets fresh photo URL
-    useEffect(() => {
-        if (!issue?.id) return;
-        setFullData(null);
-        setSelectedVolunteer('');
-        setImgError(false);
-        setFetchingFull(true);
+    if (!item) return null;
 
-        axios.get(`${API_BASE_URL}/complaints/detail/${issue.id}`, { withCredentials: true })
-            .then(res => setFullData(res.data.data))
-            .catch(err => console.error('Failed to fetch complaint detail:', err.message))
-            .finally(() => setFetchingFull(false));
-    }, [issue?.id]);
+    const address = Array.isArray(item.address)
+        ? item.address.join(', ')
+        : (item.address || '—');
 
-    if (!issue) return null;
-
-    // Prefer live-fetched data over list data
-    const photo        = fullData?.photo        || issue.photo;
-    const description  = fullData?.description  || issue.description;
-    const workNotes    = fullData?.workNotes     || issue.workNotes;
-    const isRejected   = fullData?.isRejected    || issue.isRejected || false;
-    const rejectionNote = fullData?.rejectionNote || issue.rejectionNote || '';
-    const address      = fullData?.address
-        ? (Array.isArray(fullData.address) ? fullData.address.join(', ') : fullData.address)
-        : issue.address;
-
-    const statusLabel = isRejected ? 'Rejected' : mapStatus(issue.rawStatus);
-    const sc = isRejected
-        ? statusColorMap['rejected']
-        : (statusColorMap[statusLabel.toLowerCase()] || statusColorMap['pending']);
-
-    const handleAssign = async () => {
-        if (!selectedVolunteer) return;
-        setAssigning(true);
+    const handleApprove = async () => {
+        if (!window.confirm(`Approve resolution for "${item.title}"?\n\nThis will mark the issue as Resolved and notify the citizen.`)) return;
+        setApproving(true);
         try {
             await axios.put(
-                `${API_BASE_URL}/complaints/assign/${issue.id}`,
-                { assignedTo: selectedVolunteer },
+                `${API_BASE_URL}/complaints/approve-resolution/${item._id}`,
+                {},
                 { withCredentials: true }
             );
-            onAssign(issue.id, selectedVolunteer);
-            setSelectedVolunteer('');
-            alert(`✅ Issue assigned to ${selectedVolunteer}`);
+            onApprove(item._id);
+            onClose();
         } catch (err) {
-            alert('Assignment failed: ' + (err.response?.data?.message || err.message));
+            alert('Approval failed: ' + (err.response?.data?.message || err.message));
         } finally {
-            setAssigning(false);
+            setApproving(false);
         }
     };
 
-    const handleReject = async () => {
-        const reason = window.prompt('Reason for rejecting this complaint (required — this will be shown to the citizen):');
-        if (!reason?.trim()) return;
+    const handleRejectSubmit = async () => {
+        if (!rejectNote.trim()) {
+            alert('Please enter a rejection reason so the volunteer knows what to fix.');
+            return;
+        }
         setRejecting(true);
         try {
             await axios.put(
-                `${API_BASE_URL}/complaints/${issue.id}`,
-                { isRejected: true, rejectionNote: reason },
+                `${API_BASE_URL}/complaints/reject-resolution/${item._id}`,
+                { rejectionNote: rejectNote.trim() },
                 { withCredentials: true }
             );
-            onReject(issue.id, reason);
+            onReject(item._id, rejectNote.trim());
             onClose();
-            alert('Complaint rejected. The citizen will be notified.');
         } catch (err) {
-            alert('Reject failed: ' + (err.response?.data?.message || err.message));
+            alert('Rejection failed: ' + (err.response?.data?.message || err.message));
         } finally {
             setRejecting(false);
         }
@@ -120,13 +105,15 @@ const IssueDetailPanel = ({ issue, volunteers, onClose, onAssign, onReject }) =>
 
     return (
         <>
+            {lightbox && <PhotoLightbox src={item.proofPhoto} onClose={() => setLightbox(false)} />}
+
             <div className="detail-overlay" onClick={onClose} />
             <div className="detail-panel">
                 {/* Header */}
                 <div className="detail-panel-header">
                     <div>
-                        <p className="detail-panel-eyebrow">Issue Details</p>
-                        <h2 className="detail-panel-title">{issue.title}</h2>
+                        <p className="detail-panel-eyebrow">Pending Resolution Review</p>
+                        <h2 className="detail-panel-title">{item.title}</h2>
                     </div>
                     <button className="detail-close-btn" onClick={onClose}>
                         <X size={18} />
@@ -134,78 +121,79 @@ const IssueDetailPanel = ({ issue, volunteers, onClose, onAssign, onReject }) =>
                 </div>
 
                 <div className="detail-panel-body">
-                    {fetchingFull && (
-                        <div className="detail-loading">
-                            <Loader2 size={20} className="spinner" />
-                            <span>Loading issue data...</span>
-                        </div>
-                    )}
-
-                    {/* Rejected Banner */}
-                    {isRejected && (
-                        <div className="detail-rejected-banner">
-                            <X size={16} />
-                            <div>
-                                <strong>This complaint was rejected by admin.</strong>
-                                {rejectionNote && <p className="rejection-reason">Reason: {rejectionNote}</p>}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Status + Priority */}
+                    {/* Pending badge */}
                     <div className="detail-badges">
-                        <span className="detail-status-badge"
-                            style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>
-                            ● {statusLabel}
-                        </span>
-                        <span className={`detail-priority-badge priority-${issue.priority}`}>
-                            {issue.priority?.toUpperCase()} PRIORITY
+                        <span className="detail-status-badge" style={{
+                            background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa'
+                        }}>
+                            ● Awaiting Your Approval
                         </span>
                     </div>
 
-                    {/* Photo — fetched fresh from backend */}
-                    <div className="detail-photo-section">
-                        {fetchingFull ? (
-                            <div className="detail-no-photo">
-                                <Loader2 size={24} className="spinner" />
-                                <span>Loading photo...</span>
+                    {/* ── PROOF PHOTO (most important — shown first) ── */}
+                    <div className="detail-section">
+                        <div className="detail-section-heading" style={{ marginBottom: 8 }}>
+                            <ImageIcon size={14} /> Volunteer Proof Photo
+                        </div>
+                        {item.proofPhoto && !proofImgError ? (
+                            <div style={{ position: 'relative', cursor: 'zoom-in' }} onClick={() => setLightbox(true)}>
+                                <img
+                                    src={item.proofPhoto}
+                                    alt="Proof of work"
+                                    className="detail-photo"
+                                    style={{ width: '100%', borderRadius: 8, objectFit: 'cover', maxHeight: 240 }}
+                                    onError={() => setProofImgError(true)}
+                                />
+                                <div style={{
+                                    position: 'absolute', bottom: 8, right: 8,
+                                    background: 'rgba(0,0,0,0.55)', borderRadius: 6,
+                                    padding: '4px 8px', display: 'flex', alignItems: 'center',
+                                    gap: 4, color: '#fff', fontSize: 12
+                                }}>
+                                    <ZoomIn size={12} /> Click to enlarge
+                                </div>
                             </div>
-                        ) : photo && !imgError ? (
-                            <img
-                                src={photo}
-                                alt="Issue"
-                                className="detail-photo"
-                                onError={() => setImgError(true)}
-                            />
                         ) : (
                             <div className="detail-no-photo">
                                 <ImageIcon size={32} color="#9ca3af" />
-                                <span>No photo submitted</span>
+                                <span>No proof photo uploaded</span>
                             </div>
                         )}
                     </div>
 
-                    {/* Info Grid */}
+                    {/* Work Notes */}
+                    {item.workNotes && (
+                        <div className="detail-section">
+                            <div className="detail-section-heading">
+                                <FileText size={14} /> Volunteer Work Notes
+                            </div>
+                            <p className="detail-section-text">{item.workNotes}</p>
+                        </div>
+                    )}
+
+                    {/* Info grid */}
                     <div className="detail-info-grid">
                         <div className="detail-info-row">
                             <UserIcon size={14} className="detail-info-icon" />
                             <span className="detail-info-label">Reported By</span>
-                            <span className="detail-info-value">{issue.reportedBy}</span>
+                            <span className="detail-info-value">{item.userId?.name || '—'}</span>
+                        </div>
+                        <div className="detail-info-row">
+                            <UserCheck size={14} className="detail-info-icon" />
+                            <span className="detail-info-label">Volunteer</span>
+                            <span className="detail-info-value">{item.assignedTo || '—'}</span>
                         </div>
                         <div className="detail-info-row">
                             <Calendar size={14} className="detail-info-icon" />
-                            <span className="detail-info-label">Date</span>
-                            <span className="detail-info-value">{issue.date}</span>
+                            <span className="detail-info-label">Reported</span>
+                            <span className="detail-info-value">
+                                {new Date(item.createdAt).toLocaleDateString('en-IN')}
+                            </span>
                         </div>
                         <div className="detail-info-row">
                             <Tag size={14} className="detail-info-icon" />
                             <span className="detail-info-label">Department</span>
-                            <span className="detail-info-value">{issue.category}</span>
-                        </div>
-                        <div className="detail-info-row">
-                            <UserCheck size={14} className="detail-info-icon" />
-                            <span className="detail-info-label">Assigned To</span>
-                            <span className="detail-info-value">{issue.assignedTo || '—'}</span>
+                            <span className="detail-info-value">{item.assignedTo || '—'}</span>
                         </div>
                         {address && (
                             <div className="detail-info-row full">
@@ -216,79 +204,116 @@ const IssueDetailPanel = ({ issue, volunteers, onClose, onAssign, onReject }) =>
                         )}
                     </div>
 
-                    {/* Description */}
-                    {description && (
+                    {/* Original complaint description */}
+                    {item.description && (
                         <div className="detail-section">
                             <div className="detail-section-heading">
-                                <MessageSquare size={14} /> Description
+                                <FileText size={14} /> Original Complaint
                             </div>
-                            <p className="detail-section-text">{description}</p>
+                            <p className="detail-section-text">{item.description}</p>
                         </div>
                     )}
 
-                    {/* Volunteer Notes */}
-                    {workNotes && (
+                    {/* Original photo (for comparison) */}
+                    {item.photo && !origImgError && (
                         <div className="detail-section">
                             <div className="detail-section-heading">
-                                <FileText size={14} /> Volunteer Notes
+                                <ImageIcon size={14} /> Original Complaint Photo
                             </div>
-                            <p className="detail-section-text">{workNotes}</p>
+                            <img
+                                src={item.photo}
+                                alt="Original complaint"
+                                style={{ width: '100%', borderRadius: 8, objectFit: 'cover', maxHeight: 180 }}
+                                onError={() => setOrigImgError(true)}
+                            />
                         </div>
                     )}
 
-                    {/* Actions — hidden if already rejected */}
-                    {!isRejected && (
-                        <>
-                            <div className="detail-divider" />
+                    <div className="detail-divider" />
 
-                            {/* Assign Volunteer */}
-                            <div className="detail-section">
-                                <div className="detail-section-heading">
-                                    <UserCheck size={14} />
-                                    {issue.assignedTo ? 'Reassign to Volunteer' : 'Assign to Volunteer'}
-                                </div>
-                                <div className="detail-assign-row">
-                                    <select
-                                        className="detail-volunteer-select"
-                                        value={selectedVolunteer}
-                                        onChange={(e) => setSelectedVolunteer(e.target.value)}
-                                        disabled={assigning}
-                                    >
-                                        <option value="">Select a volunteer...</option>
-                                        {volunteers.map(v => (
-                                            <option key={v.id} value={v.name}>{v.name}</option>
-                                        ))}
-                                    </select>
-                                    <button
-                                        className="detail-assign-btn"
-                                        onClick={handleAssign}
-                                        disabled={!selectedVolunteer || assigning}
-                                    >
-                                        {assigning
-                                            ? <><Loader2 size={14} className="spinner" /> Assigning...</>
-                                            : <><UserCheck size={14} /> Assign</>
-                                        }
-                                    </button>
-                                </div>
+                    {/* ── APPROVE / REJECT ACTIONS ── */}
+                    {!showRejectForm ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {/* Approve button */}
+                            <button
+                                onClick={handleApprove}
+                                disabled={approving}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    gap: 8, padding: '11px 0', borderRadius: 8, border: 'none',
+                                    background: '#16a34a', color: '#fff', fontWeight: 600,
+                                    fontSize: 14, cursor: approving ? 'not-allowed' : 'pointer',
+                                    opacity: approving ? 0.7 : 1
+                                }}
+                            >
+                                {approving
+                                    ? <><Loader2 size={15} className="spinner" /> Approving...</>
+                                    : <><CheckCircle size={15} /> Approve — Mark as Resolved</>
+                                }
+                            </button>
+
+                            {/* Show reject form */}
+                            <button
+                                onClick={() => setShowRejectForm(true)}
+                                disabled={approving}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    gap: 8, padding: '11px 0', borderRadius: 8, border: '1.5px solid #fca5a5',
+                                    background: '#fff1f2', color: '#be123c', fontWeight: 600,
+                                    fontSize: 14, cursor: 'pointer'
+                                }}
+                            >
+                                <XCircle size={15} /> Reject & Send Back to Volunteer
+                            </button>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div className="detail-section-heading" style={{ marginBottom: 0 }}>
+                                <XCircle size={14} /> Reason for Rejection
                             </div>
-
-                            {/* Reject */}
-                            <div className="detail-section">
+                            <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
+                                This message will be shown to the volunteer so they know what to fix.
+                            </p>
+                            <textarea
+                                rows={3}
+                                placeholder="e.g. Photo is unclear, work not completed fully, wrong location..."
+                                value={rejectNote}
+                                onChange={(e) => setRejectNote(e.target.value)}
+                                style={{
+                                    width: '100%', boxSizing: 'border-box',
+                                    padding: '8px 12px', borderRadius: 7,
+                                    border: '1.5px solid #fca5a5',
+                                    fontSize: 13, resize: 'vertical', fontFamily: 'inherit'
+                                }}
+                            />
+                            <div style={{ display: 'flex', gap: 8 }}>
                                 <button
-                                    className="detail-reject-btn"
-                                    onClick={handleReject}
+                                    onClick={handleRejectSubmit}
                                     disabled={rejecting}
+                                    style={{
+                                        flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
+                                        background: '#be123c', color: '#fff', fontWeight: 600,
+                                        fontSize: 14, cursor: rejecting ? 'not-allowed' : 'pointer',
+                                        opacity: rejecting ? 0.7 : 1
+                                    }}
                                 >
                                     {rejecting
                                         ? <><Loader2 size={14} className="spinner" /> Rejecting...</>
-                                        : <><X size={14} /> Reject This Complaint</>
+                                        : 'Confirm Rejection'
                                     }
                                 </button>
-                                <p className="detail-reject-hint">
-                                    Rejecting stops all further processing and notifies the citizen with your reason.
-                                </p>
+                                <button
+                                    onClick={() => { setShowRejectForm(false); setRejectNote(''); }}
+                                    style={{
+                                        padding: '10px 16px', borderRadius: 8,
+                                        border: '1.5px solid #d1d5db', background: '#fff',
+                                        fontSize: 14, cursor: 'pointer', color: '#374151'
+                                    }}
+                                >
+                                    Cancel
+                                </button>
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>
@@ -297,17 +322,15 @@ const IssueDetailPanel = ({ issue, volunteers, onClose, onAssign, onReject }) =>
 };
 
 // ── Main Component ─────────────────────────────────────────────────────────
-const AllIssuesAdmin = () => {
+const AdminIssuesUpdates = () => {
     const navigate = useNavigate();
     const { user, signOut } = useAuth();
 
-    const [allIssues, setAllIssues] = useState([]);
-    const [allVolunteers, setAllVolunteers] = useState([]);
+    const [pendingItems, setPendingItems] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedItem, setSelectedItem] = useState(null);
     const [authChecked, setAuthChecked] = useState(false);
-    const [selectedIssue, setSelectedIssue] = useState(null);
 
     const handleLogout = () => {
         if (window.confirm('Are you sure you want to logout?')) {
@@ -321,48 +344,15 @@ const AllIssuesAdmin = () => {
         return name.split(' ').map(p => p[0]).join('').toUpperCase();
     };
 
-    const fetchVolunteers = useCallback(async () => {
-        try {
-            const res = await axios.get(`${API_BASE_URL}/users/list-all`, { withCredentials: true });
-            setAllVolunteers(
-                res.data.data
-                    .filter(u => u.role === 'volunteer')
-                    .map(v => ({ id: v._id, name: v.name, location: v.location }))
-            );
-        } catch (err) {
-            console.error("Failed to fetch volunteers:", err.message);
-        }
-    }, []);
-
-    const fetchIssues = useCallback(async () => {
+    const fetchPending = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await axios.get(`${API_BASE_URL}/complaints/all`, { withCredentials: true });
-            const mapped = res.data.data.map(comp => {
-                let assignedToName = comp.assignedTo;
-                if (DEPARTMENTS.includes(assignedToName)) assignedToName = null;
-                return {
-                    id: comp._id,
-                    title: comp.title,
-                    description: comp.description || '',
-                    photo: comp.photo || null,
-                    rawStatus: comp.status,
-                    isRejected: comp.isRejected || false,
-                    rejectionNote: comp.rejectionNote || '',
-                    statusLabel: comp.isRejected ? 'Rejected' : mapStatus(comp.status),
-                    priority: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)],
-                    assignedTo: assignedToName,
-                    reportedBy: comp.userId?.name || 'Anonymous',
-                    date: new Date(comp.createdAt).toLocaleDateString('en-IN'),
-                    category: comp.assignedTo || 'General',
-                    address: Array.isArray(comp.address) ? comp.address.join(', ') : (comp.address || ''),
-                    workNotes: comp.workNotes || '',
-                };
-            });
-            setAllIssues(mapped);
+            const res = await axios.get(`${API_BASE_URL}/complaints/pending-requests`, { withCredentials: true });
+            setPendingItems(res.data.data || []);
         } catch (err) {
-            setError('Failed to fetch issues.');
+            setError('Failed to fetch pending requests.');
+            console.error(err.message);
         } finally {
             setLoading(false);
         }
@@ -375,59 +365,28 @@ const AllIssuesAdmin = () => {
 
     useEffect(() => {
         if (!authChecked) return;
-        if (user) { fetchIssues(); fetchVolunteers(); }
-        else navigate('/login');
-    }, [user, navigate, fetchIssues, fetchVolunteers, authChecked]);
+        if (!user) { navigate('/login'); return; }
+        if (user.role !== 'admin') { navigate('/dashboard'); return; }
+        fetchPending();
+    }, [user, navigate, fetchPending, authChecked]);
 
-    const filteredIssues = useMemo(() => {
-        if (!searchTerm) return allIssues;
-        const q = searchTerm.toLowerCase();
-        return allIssues.filter(i =>
-            i.title.toLowerCase().includes(q) ||
-            i.reportedBy.toLowerCase().includes(q) ||
-            (i.assignedTo || '').toLowerCase().includes(q) ||
-            i.statusLabel.toLowerCase().includes(q)
-        );
-    }, [allIssues, searchTerm]);
-
-    const dynamicStats = useMemo(() => {
-        const total = allIssues.length;
-        const inProgress = allIssues.filter(i => i.rawStatus === 'in progress').length;
-        const resolved = allIssues.filter(i => i.rawStatus === 'resolved' && !i.isRejected).length;
-        const pending = allIssues.filter(i => i.rawStatus === 'recived' && !i.isRejected).length;
-        return [
-            { label: 'Total Issues', value: total, icon: BarChart3, color: '#e5e7eb' },
-            { label: 'In Progress', value: inProgress, icon: Clock, color: '#dbeafe' },
-            { label: 'Resolved', value: resolved, icon: CheckCircle, color: '#dcfce7' },
-            { label: 'Pending', value: pending, icon: AlertCircle, color: '#ffedd5' },
-        ];
-    }, [allIssues]);
-
-    const handleRowClick = (issue) => setSelectedIssue(issue);
-    const handleClosePanel = () => setSelectedIssue(null);
-
-    const handleAssignIssue = (issueId, volunteerName) => {
-        setAllIssues(prev => prev.map(i => i.id === issueId ? { ...i, assignedTo: volunteerName } : i));
-        setSelectedIssue(prev => prev?.id === issueId ? { ...prev, assignedTo: volunteerName } : prev);
+    const handleApprove = (id) => {
+        setPendingItems(prev => prev.filter(i => i._id !== id));
     };
 
-    const handleRejectIssue = (issueId, reason) => {
-        setAllIssues(prev => prev.map(i =>
-            i.id === issueId
-                ? { ...i, isRejected: true, rejectionNote: reason, statusLabel: 'Rejected' }
-                : i
-        ));
+    const handleReject = (id) => {
+        setPendingItems(prev => prev.filter(i => i._id !== id));
     };
 
-    if (!user && !authChecked) return (
+    if (!authChecked || !user) return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
             <Loader2 size={24} className="spinner" />
         </div>
     );
-    if (!user) return null;
 
     return (
-        <div className={`all-issues-admin ${selectedIssue ? 'has-panel' : ''}`}>
+        <div className={`all-issues-admin ${selectedItem ? 'has-panel' : ''}`}>
+            {/* Header */}
             <header className="admin-header">
                 <div className="admin-header-left">
                     <div className="admin-logo">
@@ -437,10 +396,26 @@ const AllIssuesAdmin = () => {
                         </div>
                     </div>
                     <nav className="admin-nav">
-                        <Link to="/admin-dashboard" className="admin-nav-link"><LayoutDashboard size={18} /> Dashboard</Link>
-                        <Link to="/admin-all-issues" className="admin-nav-link active"><AlertCircle size={18} /> All Issues</Link>
-                        <Link to="/admin-users-volunteers" className="admin-nav-link"><Users size={18} /> Users & Volunteers</Link>
-                        <Link to="/admin-issues-updates" className="admin-nav-link"><Clock size={18} /> Issue Updates</Link>
+                        <Link to="/admin-dashboard" className="admin-nav-link">
+                            <LayoutDashboard size={18} /> Dashboard
+                        </Link>
+                        <Link to="/admin-all-issues" className="admin-nav-link">
+                            <AlertCircle size={18} /> All Issues
+                        </Link>
+                        <Link to="/admin-users-volunteers" className="admin-nav-link">
+                            <Users size={18} /> Users & Volunteers
+                        </Link>
+                        <Link to="/admin-issues-updates" className="admin-nav-link active">
+                            <Clock size={18} /> Issue Updates
+                            {pendingItems.length > 0 && (
+                                <span style={{
+                                    background: '#ef4444', color: '#fff', borderRadius: '50%',
+                                    fontSize: 11, fontWeight: 700, padding: '1px 6px', marginLeft: 4
+                                }}>
+                                    {pendingItems.length}
+                                </span>
+                            )}
+                        </Link>
                     </nav>
                 </div>
                 <div className="user-profile">
@@ -455,117 +430,135 @@ const AllIssuesAdmin = () => {
             </header>
 
             <div className="main-content">
+                {/* Hero */}
                 <div className="issues-hero">
                     <div className="issues-hero-content">
-                        <BarChart3 size={36} />
-                        <h1>All Issues Management</h1>
-                        <p>Click any row to review, assign a volunteer, or reject the complaint</p>
+                        <Clock size={36} />
+                        <h1>Resolution Approvals</h1>
+                        <p>Review volunteer proof photos and approve or reject resolution requests</p>
                     </div>
                 </div>
 
-                <div className="issues-stats-grid">
-                    {dynamicStats.map((stat, idx) => {
-                        const Icon = stat.icon;
-                        return (
-                            <div key={idx} className="issues-stat-card">
-                                <div className="issues-stat-content">
-                                    <div className="issues-stat-info">
-                                        <div className="issues-stat-label">{stat.label}</div>
-                                        <div className="issues-stat-value">{stat.value}</div>
-                                    </div>
-                                    <div className="issues-stat-icon" style={{ backgroundColor: stat.color }}>
-                                        <Icon size={24} color="#6b7280" />
-                                    </div>
+                {/* Stats strip */}
+                <div className="issues-stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                    <div className="issues-stat-card">
+                        <div className="issues-stat-content">
+                            <div className="issues-stat-info">
+                                <div className="issues-stat-label">Awaiting Review</div>
+                                <div className="issues-stat-value">{pendingItems.length}</div>
+                            </div>
+                            <div className="issues-stat-icon" style={{ backgroundColor: '#ffedd5' }}>
+                                <Clock size={24} color="#f97316" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="issues-stat-card">
+                        <div className="issues-stat-content">
+                            <div className="issues-stat-info">
+                                <div className="issues-stat-label">With Proof Photo</div>
+                                <div className="issues-stat-value">
+                                    {pendingItems.filter(i => i.proofPhoto).length}
                                 </div>
                             </div>
-                        );
-                    })}
+                            <div className="issues-stat-icon" style={{ backgroundColor: '#dbeafe' }}>
+                                <ImageIcon size={24} color="#3b82f6" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="issues-stat-card">
+                        <div className="issues-stat-content">
+                            <div className="issues-stat-info">
+                                <div className="issues-stat-label">No Photo</div>
+                                <div className="issues-stat-value">
+                                    {pendingItems.filter(i => !i.proofPhoto).length}
+                                </div>
+                            </div>
+                            <div className="issues-stat-icon" style={{ backgroundColor: '#f3e8ff' }}>
+                                <AlertCircle size={24} color="#a855f7" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
+                {/* Table */}
                 <div className="issues-table-section">
                     <div className="issues-table-header">
                         <div className="issues-table-title">
-                            <AlertCircle size={20} />
-                            <h2>Issues Overview</h2>
+                            <Clock size={20} />
+                            <h2>Pending Resolutions</h2>
                         </div>
-                        <p className="issues-table-subtitle">Click any row to review and take action</p>
-                    </div>
-
-                    <div className="table-actions">
-                        <div className="search-box">
-                            <Search size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search issues..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
+                        <p className="issues-table-subtitle">Click any row to review the proof photo and take action</p>
                     </div>
 
                     <div className="issues-table-container">
                         {loading ? (
                             <div className="loading-state-admin">
-                                <div className="loading-spinner"></div>
-                                <p>Loading issues...</p>
+                                <div className="loading-spinner" />
+                                <p>Loading pending requests...</p>
                             </div>
                         ) : error ? (
                             <div className="error-state-admin">
                                 <AlertCircle size={24} color="#ef4444" />
                                 <p>{error}</p>
                             </div>
-                        ) : filteredIssues.length === 0 ? (
-                            <div className="empty-state-admin">
-                                <Search size={24} color="#9ca3af" />
-                                <p>No issues found.</p>
+                        ) : pendingItems.length === 0 ? (
+                            <div className="empty-state-admin" style={{ padding: '48px 24px', textAlign: 'center' }}>
+                                <CheckCircle size={40} color="#22c55e" style={{ marginBottom: 12 }} />
+                                <p style={{ fontSize: 16, fontWeight: 600, color: '#374151' }}>
+                                    All caught up!
+                                </p>
+                                <p style={{ color: '#9ca3af', marginTop: 4 }}>
+                                    No volunteer resolutions are pending your approval.
+                                </p>
                             </div>
                         ) : (
                             <table className="issues-table">
                                 <thead>
                                     <tr>
-                                        <th>Title</th>
-                                        <th>Status</th>
-                                        <th>Priority</th>
-                                        <th>Assigned To</th>
+                                        <th>Issue Title</th>
+                                        <th>Volunteer</th>
                                         <th>Reported By</th>
-                                        <th>Date</th>
+                                        <th>Proof Photo</th>
+                                        <th>Submitted</th>
                                         <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredIssues.map((issue) => {
-                                        const scKey = issue.isRejected ? 'rejected' : issue.statusLabel.toLowerCase();
-                                        const sc = statusColorMap[scKey] || statusColorMap['pending'];
-                                        const isActive = selectedIssue?.id === issue.id;
+                                    {pendingItems.map((item) => {
+                                        const isActive = selectedItem?._id === item._id;
+                                        const assignedToName = DEPARTMENTS.includes(item.assignedTo) ? '—' : item.assignedTo;
                                         return (
                                             <tr
-                                                key={issue.id}
-                                                className={`issue-row ${isActive ? 'issue-row-active' : ''} ${issue.isRejected ? 'issue-row-rejected' : ''}`}
-                                                onClick={() => handleRowClick(issue)}
+                                                key={item._id}
+                                                className={`issue-row ${isActive ? 'issue-row-active' : ''}`}
+                                                onClick={() => setSelectedItem(item)}
+                                                style={{ cursor: 'pointer' }}
                                             >
-                                                <td className="issue-title-cell">
-                                                    {issue.title}
-                                                    {issue.isRejected && <span className="rejected-inline-badge">Rejected</span>}
-                                                </td>
+                                                <td className="issue-title-cell">{item.title}</td>
                                                 <td>
-                                                    <span className="status-badge"
-                                                        style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>
-                                                        {issue.statusLabel}
-                                                    </span>
+                                                    <span className="assigned-name-text">{assignedToName || '—'}</span>
                                                 </td>
+                                                <td>{item.userId?.name || 'Anonymous'}</td>
                                                 <td>
-                                                    <span className={`priority-badge priority-${issue.priority}`}>
-                                                        {issue.priority}
-                                                    </span>
+                                                    {item.proofPhoto ? (
+                                                        <span style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                                                            background: '#dcfce7', color: '#15803d',
+                                                            padding: '3px 8px', borderRadius: 20, fontSize: 12, fontWeight: 600
+                                                        }}>
+                                                            <ImageIcon size={12} /> Photo uploaded
+                                                        </span>
+                                                    ) : (
+                                                        <span style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                                                            background: '#fff7ed', color: '#c2410c',
+                                                            padding: '3px 8px', borderRadius: 20, fontSize: 12, fontWeight: 600
+                                                        }}>
+                                                            <AlertCircle size={12} /> No photo
+                                                        </span>
+                                                    )}
                                                 </td>
-                                                <td>
-                                                    {issue.assignedTo
-                                                        ? <span className="assigned-name-text">{issue.assignedTo}</span>
-                                                        : <span className="unassigned-text">Unassigned</span>
-                                                    }
-                                                </td>
-                                                <td>{issue.reportedBy}</td>
-                                                <td>{issue.date}</td>
+                                                <td>{new Date(item.updatedAt).toLocaleDateString('en-IN')}</td>
                                                 <td className="chevron-cell">
                                                     <ChevronRight size={16} color={isActive ? '#5b6fa8' : '#d1d5db'} />
                                                 </td>
@@ -579,17 +572,16 @@ const AllIssuesAdmin = () => {
                 </div>
             </div>
 
-            {selectedIssue && (
-                <IssueDetailPanel
-                    issue={selectedIssue}
-                    volunteers={allVolunteers}
-                    onClose={handleClosePanel}
-                    onAssign={handleAssignIssue}
-                    onReject={handleRejectIssue}
+            {selectedItem && (
+                <ResolutionPanel
+                    item={selectedItem}
+                    onClose={() => setSelectedItem(null)}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
                 />
             )}
         </div>
     );
 };
 
-export default AllIssuesAdmin;
+export default AdminIssuesUpdates;

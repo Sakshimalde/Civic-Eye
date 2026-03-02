@@ -96,7 +96,7 @@ const Volunteer = () => {
             <header className="header-top">
 
                 <nav className="nav-links">
-                    <Link to="/volunteer-dashboard" className="active">Dashboard</Link>
+                    <Link to="/volunteer" className="active">Dashboard</Link>
                     <Link to="/MyAssignedIssues">My Assigned Issues</Link>
                     <Link to="/volunteer-browser-issues">Browse Issues</Link>
                 </nav>

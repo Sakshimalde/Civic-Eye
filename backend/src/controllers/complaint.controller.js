@@ -31,13 +31,15 @@ const allowedDepartments = [
 ];
 
 // ================= Get Pending Requests for Admin =================
+// Returns all complaints where volunteer has submitted a resolution awaiting admin approval
 const getPendingRequests = asyncHandler(async (req, res) => {
     if (req.user.role !== 'admin') {
         throw new ApiError(403, "Access forbidden. Only admins can view pending requests.");
     }
 
-    const pendingComplaints = await Complaint.find({ pendingUpdate: 'true' })
-        .populate("userId", "name profilePhoto")
+    // ✅ FIX: was comparing boolean to string 'true' — now uses boolean true
+    const pendingComplaints = await Complaint.find({ pendingUpdate: true })
+        .populate("userId", "name profilePhoto email")
         .sort({ updatedAt: -1 });
 
     res.status(200).json(new ApiResponse(200, pendingComplaints, "Pending requests fetched successfully."));
@@ -170,7 +172,7 @@ const viewComplaint = asyncHandler(async (req, res) => {
     res.status(201).json(new ApiResponse(201, allComplaints, "user data fetched successfully"));
 });
 
-// ================= Edit Complaint (Admin full edit + approval/rejection) =================
+// ================= Edit Complaint (Admin full edit + complaint-level rejection) =================
 const editComplaint = asyncHandler(async (req, res, next) => {
     const { complaintId } = req.params;
     let { title, description, address, assignedTo, locationCoords, status, pendingUpdate, rejectionNote } = req.body;
@@ -185,8 +187,6 @@ const editComplaint = asyncHandler(async (req, res, next) => {
     const complaint = await Complaint.findById(complaintId).populate("userId", "name email");
     if (!complaint) throw new ApiError(404, "Complaint not found");
 
-    const previousStatus = complaint.status;
-    const previousPending = complaint.pendingUpdate;
     const isBeingRejected = req.body.isRejected === true || req.body.isRejected === 'true';
 
     let complaintPhotoUrl = complaint.photo;
@@ -206,7 +206,7 @@ const editComplaint = asyncHandler(async (req, res, next) => {
                 assignedTo: assignedTo || complaint.assignedTo,
                 locationCoords: locationCoords || complaint.locationCoords,
                 photo: complaintPhotoUrl,
-                status: isBeingRejected ? 'resolved' : (status || complaint.status),
+                status: isBeingRejected ? complaint.status : (status || complaint.status),
                 pendingUpdate: pendingUpdate !== undefined ? pendingUpdate : complaint.pendingUpdate,
                 rejectionNote: rejectionNote || complaint.rejectionNote,
                 isRejected: isBeingRejected ? true : complaint.isRejected,
@@ -218,49 +218,17 @@ const editComplaint = asyncHandler(async (req, res, next) => {
 
     if (!updatedComplaint) throw new ApiError(500, "Error while updating complaint");
 
-    const citizen = updatedComplaint.userId;
-    const newStatus = updatedComplaint.status;
-
-    // ── EMAIL TRIGGERS based on what changed ────────────────────
+    // ── EMAIL: Complaint Rejected ────────────────────────────────
     try {
-        if (citizen?.email) {
-            const shortId = updatedComplaint._id.toString().slice(-8).toUpperCase();
-
-            // Admin APPROVED resolution (pendingUpdate false + status resolved)
-            if (previousPending === true && pendingUpdate === false && newStatus === 'resolved' && !isBeingRejected) {
-                const { subject, html } = issueResolvedEmail({
-                    citizenName: citizen.name,
-                    title: updatedComplaint.title,
-                    volunteerName: updatedComplaint.assignedTo,
-                    workNotes: updatedComplaint.workNotes,
-                    complaintId: shortId,
-                    resolvedAt: fmt(updatedComplaint.updatedAt),
-                });
-                await sendEmail(citizen.email, subject, html);
-            }
-
-            // Admin REJECTED resolution (pendingUpdate false + status back to in progress)
-            else if (previousPending === true && pendingUpdate === false && newStatus === 'in progress') {
-                const { subject, html } = resolutionRejectedEmail({
-                    citizenName: citizen.name,
-                    title: updatedComplaint.title,
-                    volunteerName: updatedComplaint.assignedTo,
-                    rejectionNote: rejectionNote || updatedComplaint.rejectionNote,
-                    complaintId: shortId,
-                });
-                await sendEmail(citizen.email, subject, html);
-            }
-
-            // Admin REJECTED the complaint itself
-            else if (isBeingRejected) {
-                const { subject, html } = complaintRejectedEmail({
-                    citizenName: citizen.name,
-                    title: updatedComplaint.title,
-                    rejectionNote: rejectionNote || 'Your complaint did not meet the submission criteria.',
-                    complaintId: shortId,
-                });
-                await sendEmail(citizen.email, subject, html);
-            }
+        const citizen = updatedComplaint.userId;
+        if (citizen?.email && isBeingRejected) {
+            const { subject, html } = complaintRejectedEmail({
+                citizenName: citizen.name,
+                title: updatedComplaint.title,
+                rejectionNote: rejectionNote || 'Your complaint did not meet the submission criteria.',
+                complaintId: updatedComplaint._id.toString().slice(-8).toUpperCase(),
+            });
+            await sendEmail(citizen.email, subject, html);
         }
     } catch (emailErr) {
         console.error("[Email] Edit complaint email failed:", emailErr.message);
@@ -268,6 +236,122 @@ const editComplaint = asyncHandler(async (req, res, next) => {
     // ─────────────────────────────────────────────────────────────
 
     res.status(200).json(new ApiResponse(200, updatedComplaint, "Complaint updated successfully"));
+});
+
+// ================= Admin: Approve Volunteer Resolution =================
+// Sets status to 'resolved', clears pendingUpdate, notifies citizen
+const approveResolution = asyncHandler(async (req, res) => {
+    if (req.user.role !== 'admin') {
+        throw new ApiError(403, "Access forbidden. Only admins can approve resolutions.");
+    }
+
+    const { complaintId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(complaintId)) {
+        throw new ApiError(400, "Invalid Complaint ID");
+    }
+
+    const complaint = await Complaint.findById(complaintId).populate("userId", "name email");
+    if (!complaint) throw new ApiError(404, "Complaint not found");
+
+    if (!complaint.pendingUpdate) {
+        throw new ApiError(400, "This complaint has no pending resolution to approve.");
+    }
+
+    const updatedComplaint = await Complaint.findByIdAndUpdate(
+        complaintId,
+        {
+            $set: {
+                status: 'resolved',
+                pendingUpdate: false,
+                resolutionRejected: false,
+                resolutionRejectionNote: "",
+                updatedAt: new Date()
+            }
+        },
+        { new: true }
+    ).populate("userId", "name email");
+
+    // ── EMAIL: Issue Resolved ────────────────────────────────────
+    try {
+        const citizen = updatedComplaint.userId;
+        if (citizen?.email) {
+            const { subject, html } = issueResolvedEmail({
+                citizenName: citizen.name,
+                title: updatedComplaint.title,
+                volunteerName: updatedComplaint.assignedTo,
+                workNotes: updatedComplaint.workNotes,
+                complaintId: updatedComplaint._id.toString().slice(-8).toUpperCase(),
+                resolvedAt: fmt(updatedComplaint.updatedAt),
+            });
+            await sendEmail(citizen.email, subject, html);
+        }
+    } catch (emailErr) {
+        console.error("[Email] Approve resolution email failed:", emailErr.message);
+    }
+    // ─────────────────────────────────────────────────────────────
+
+    res.status(200).json(new ApiResponse(200, updatedComplaint, "Resolution approved. Issue marked as resolved."));
+});
+
+// ================= Admin: Reject Volunteer Resolution =================
+// Sends status back to 'in progress', clears pendingUpdate, sets resolutionRejected flag
+const rejectResolution = asyncHandler(async (req, res) => {
+    if (req.user.role !== 'admin') {
+        throw new ApiError(403, "Access forbidden. Only admins can reject resolutions.");
+    }
+
+    const { complaintId } = req.params;
+    const { rejectionNote } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(complaintId)) {
+        throw new ApiError(400, "Invalid Complaint ID");
+    }
+
+    if (!rejectionNote?.trim()) {
+        throw new ApiError(400, "A rejection reason is required so the volunteer knows what to fix.");
+    }
+
+    const complaint = await Complaint.findById(complaintId).populate("userId", "name email");
+    if (!complaint) throw new ApiError(404, "Complaint not found");
+
+    if (!complaint.pendingUpdate) {
+        throw new ApiError(400, "This complaint has no pending resolution to reject.");
+    }
+
+    const updatedComplaint = await Complaint.findByIdAndUpdate(
+        complaintId,
+        {
+            $set: {
+                status: 'in progress',        // push back to in-progress
+                pendingUpdate: false,          // no longer awaiting approval
+                resolutionRejected: true,      // flag so volunteer sees the rejection
+                resolutionRejectionNote: rejectionNote.trim(),
+                updatedAt: new Date()
+            }
+        },
+        { new: true }
+    ).populate("userId", "name email");
+
+    // ── EMAIL: Resolution Rejected → notify citizen too ──────────
+    try {
+        const citizen = updatedComplaint.userId;
+        if (citizen?.email) {
+            const { subject, html } = resolutionRejectedEmail({
+                citizenName: citizen.name,
+                title: updatedComplaint.title,
+                volunteerName: updatedComplaint.assignedTo,
+                rejectionNote: rejectionNote.trim(),
+                complaintId: updatedComplaint._id.toString().slice(-8).toUpperCase(),
+            });
+            await sendEmail(citizen.email, subject, html);
+        }
+    } catch (emailErr) {
+        console.error("[Email] Reject resolution email failed:", emailErr.message);
+    }
+    // ─────────────────────────────────────────────────────────────
+
+    res.status(200).json(new ApiResponse(200, updatedComplaint, "Resolution rejected. Volunteer has been notified to resubmit."));
 });
 
 // ================= Delete Complaint =================
@@ -323,6 +407,8 @@ const getAssignedIssues = asyncHandler(async (req, res) => {
 });
 
 // ================= Volunteer Updates Status =================
+// When volunteer marks as 'resolved', stores proof photo and sets pendingUpdate=true for admin review.
+// Status stays 'in progress' (not 'resolved') until admin approves.
 const volunteerUpdateStatus = asyncHandler(async (req, res) => {
     const { complaintId } = req.params;
     const { status, workNotes } = req.body;
@@ -334,18 +420,24 @@ const volunteerUpdateStatus = asyncHandler(async (req, res) => {
 
     const previousStatus = complaint.status;
 
-    complaint.status = status || complaint.status;
+    // ✅ If volunteer submits as resolved: keep status at 'in progress', set pendingUpdate for admin
+    if (status === 'resolved') {
+        complaint.pendingUpdate = true;
+        complaint.resolutionRejected = false;       // clear any previous rejection
+        complaint.resolutionRejectionNote = "";
+        // Don't change status to 'resolved' yet — admin must approve first
+        // Status stays at current (in progress / inReview)
+    } else {
+        complaint.status = status || complaint.status;
+    }
+
     complaint.updatedAt = new Date();
     if (workNotes) complaint.workNotes = workNotes;
 
-    // If volunteer marks as resolved → set pendingUpdate = true for admin review
-    if (status === 'resolved') {
-        complaint.pendingUpdate = true;
-    }
-
+    // ✅ Upload proof photo to proofPhoto field (separate from the original complaint photo)
     if (req.file) {
         const imageUpload = await uploadOnCloudinary(req.file.path);
-        complaint.photo = imageUpload?.secure_url || imageUpload?.url || complaint.photo;
+        complaint.proofPhoto = imageUpload?.secure_url || imageUpload?.url || complaint.proofPhoto;
     }
 
     await complaint.save();
@@ -367,14 +459,18 @@ const volunteerUpdateStatus = asyncHandler(async (req, res) => {
                 });
                 await sendEmail(citizen.email, subject, html);
             }
-            // Note: resolved email is sent ONLY after admin approves (in editComplaint above)
+            // Note: resolved email is sent ONLY after admin approves (in approveResolution above)
         }
     } catch (emailErr) {
         console.error("[Email] Volunteer update email failed:", emailErr.message);
     }
     // ─────────────────────────────────────────────────────────────
 
-    res.status(200).json(new ApiResponse(200, complaint, "Status updated successfully"));
+    const message = status === 'resolved'
+        ? "Resolution submitted for admin approval."
+        : "Status updated successfully";
+
+    res.status(200).json(new ApiResponse(200, complaint, message));
 });
 
 export {
@@ -388,4 +484,6 @@ export {
     volunteerUpdateStatus,
     getPendingRequests,
     getSingleComplaint,
+    approveResolution,
+    rejectResolution,
 };

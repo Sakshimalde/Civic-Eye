@@ -12,6 +12,8 @@ import {
     volunteerUpdateStatus,
     getPendingRequests,
     getSingleComplaint,
+    approveResolution,
+    rejectResolution,
 } from "../controllers/complaint.controller.js";
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -28,6 +30,10 @@ complaintRouter.route("/pending-requests").get(verifyJWT, getPendingRequests);
 complaintRouter.route("/assigned").get(verifyJWT, getAssignedIssues);
 complaintRouter.route("/assign/:complaintId").put(verifyJWT, updateComplaintAssignment);
 complaintRouter.route("/update-status/:complaintId").put(verifyJWT, upload.single("proofPhoto"), volunteerUpdateStatus);
+
+// Admin resolution approval / rejection (must come before generic :complaintId routes)
+complaintRouter.route("/approve-resolution/:complaintId").put(verifyJWT, approveResolution);
+complaintRouter.route("/reject-resolution/:complaintId").put(verifyJWT, rejectResolution);
 
 // Single complaint (admin detail panel)
 complaintRouter.route("/detail/:complaintId").get(verifyJWT, getSingleComplaint);
