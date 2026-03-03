@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 import {
     LayoutDashboard, AlertCircle, Users, Clock,
     CheckCircle, XCircle, ArrowRight, Loader2,
-    Image as ImageIcon, FileText, MapPin, User as UserIcon,
-    Calendar, Tag, UserCheck, ZoomIn, X, ChevronRight
+    Image as ImageIcon, FileText, MapPin,
+    User as UserIcon, Calendar, Tag, UserCheck,
+    ZoomIn, X, ChevronRight
 } from 'lucide-react';
-import './AdminAllIssues.css'; // reuse existing styles
+import './AdminAllIssues.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API_BASE_URL = `${BACKEND_URL}/api/v1`;
@@ -21,36 +22,33 @@ const DEPARTMENTS = [
     "Ward/zone office and central admin"
 ];
 
-// ── Photo Lightbox ─────────────────────────────────────────────────────────
+// ── Photo Lightbox ──────────────────────────────────────────────────────────
 const PhotoLightbox = ({ src, onClose }) => (
     <div
         style={{
             position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.85)',
+            background: 'rgba(0,0,0,0.88)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}
         onClick={onClose}
     >
-        <button
-            onClick={onClose}
-            style={{
-                position: 'absolute', top: 20, right: 24,
-                background: 'none', border: 'none', color: '#fff',
-                cursor: 'pointer', fontSize: 28, lineHeight: 1
-            }}
-        >✕</button>
+        <button onClick={onClose} style={{
+            position: 'absolute', top: 20, right: 28,
+            background: 'none', border: 'none', color: '#fff',
+            cursor: 'pointer', fontSize: 32, lineHeight: 1, zIndex: 10
+        }}>✕</button>
         <img
             src={src}
             alt="Proof"
-            style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 8, objectFit: 'contain' }}
-            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 10, objectFit: 'contain' }}
+            onClick={e => e.stopPropagation()}
         />
     </div>
 );
 
-// ── Resolution Detail Panel ────────────────────────────────────────────────
+// ── Resolution Detail Side Panel ────────────────────────────────────────────
 const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
-    const [lightbox, setLightbox] = useState(false);
+    const [lightboxSrc, setLightboxSrc] = useState(null);
     const [approving, setApproving] = useState(false);
     const [rejecting, setRejecting] = useState(false);
     const [rejectNote, setRejectNote] = useState('');
@@ -63,6 +61,7 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
     const address = Array.isArray(item.address)
         ? item.address.join(', ')
         : (item.address || '—');
+    const volunteerName = DEPARTMENTS.includes(item.assignedTo) ? '—' : (item.assignedTo || '—');
 
     const handleApprove = async () => {
         if (!window.confirm(`Approve resolution for "${item.title}"?\n\nThis will mark the issue as Resolved and notify the citizen.`)) return;
@@ -84,7 +83,7 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
 
     const handleRejectSubmit = async () => {
         if (!rejectNote.trim()) {
-            alert('Please enter a rejection reason so the volunteer knows what to fix.');
+            alert('Please enter a reason so the volunteer knows what to fix.');
             return;
         }
         setRejecting(true);
@@ -94,7 +93,7 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
                 { rejectionNote: rejectNote.trim() },
                 { withCredentials: true }
             );
-            onReject(item._id, rejectNote.trim());
+            onReject(item._id);
             onClose();
         } catch (err) {
             alert('Rejection failed: ' + (err.response?.data?.message || err.message));
@@ -105,23 +104,21 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
 
     return (
         <>
-            {lightbox && <PhotoLightbox src={item.proofPhoto} onClose={() => setLightbox(false)} />}
+            {lightboxSrc && <PhotoLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
 
             <div className="detail-overlay" onClick={onClose} />
             <div className="detail-panel">
-                {/* Header */}
+
                 <div className="detail-panel-header">
                     <div>
-                        <p className="detail-panel-eyebrow">Pending Resolution Review</p>
+                        <p className="detail-panel-eyebrow">Resolution Approval Request</p>
                         <h2 className="detail-panel-title">{item.title}</h2>
                     </div>
-                    <button className="detail-close-btn" onClick={onClose}>
-                        <X size={18} />
-                    </button>
+                    <button className="detail-close-btn" onClick={onClose}><X size={18} /></button>
                 </div>
 
                 <div className="detail-panel-body">
-                    {/* Pending badge */}
+
                     <div className="detail-badges">
                         <span className="detail-status-badge" style={{
                             background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa'
@@ -130,48 +127,46 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
                         </span>
                     </div>
 
-                    {/* ── PROOF PHOTO (most important — shown first) ── */}
+                    {/* PROOF PHOTO — shown prominently first */}
                     <div className="detail-section">
-                        <div className="detail-section-heading" style={{ marginBottom: 8 }}>
+                        <div className="detail-section-heading">
                             <ImageIcon size={14} /> Volunteer Proof Photo
                         </div>
                         {item.proofPhoto && !proofImgError ? (
-                            <div style={{ position: 'relative', cursor: 'zoom-in' }} onClick={() => setLightbox(true)}>
+                            <div
+                                style={{ position: 'relative', cursor: 'zoom-in', marginTop: 8 }}
+                                onClick={() => setLightboxSrc(item.proofPhoto)}
+                            >
                                 <img
                                     src={item.proofPhoto}
                                     alt="Proof of work"
-                                    className="detail-photo"
-                                    style={{ width: '100%', borderRadius: 8, objectFit: 'cover', maxHeight: 240 }}
+                                    style={{ width: '100%', borderRadius: 8, objectFit: 'cover', maxHeight: 220, display: 'block' }}
                                     onError={() => setProofImgError(true)}
                                 />
                                 <div style={{
                                     position: 'absolute', bottom: 8, right: 8,
                                     background: 'rgba(0,0,0,0.55)', borderRadius: 6,
-                                    padding: '4px 8px', display: 'flex', alignItems: 'center',
-                                    gap: 4, color: '#fff', fontSize: 12
+                                    padding: '3px 8px', display: 'flex', alignItems: 'center',
+                                    gap: 4, color: '#fff', fontSize: 11, fontWeight: 600
                                 }}>
-                                    <ZoomIn size={12} /> Click to enlarge
+                                    <ZoomIn size={11} /> Click to enlarge
                                 </div>
                             </div>
                         ) : (
-                            <div className="detail-no-photo">
-                                <ImageIcon size={32} color="#9ca3af" />
-                                <span>No proof photo uploaded</span>
+                            <div className="detail-no-photo" style={{ marginTop: 8 }}>
+                                <ImageIcon size={28} color="#9ca3af" />
+                                <span>No proof photo uploaded by volunteer</span>
                             </div>
                         )}
                     </div>
 
-                    {/* Work Notes */}
                     {item.workNotes && (
                         <div className="detail-section">
-                            <div className="detail-section-heading">
-                                <FileText size={14} /> Volunteer Work Notes
-                            </div>
+                            <div className="detail-section-heading"><FileText size={14} /> Volunteer Work Notes</div>
                             <p className="detail-section-text">{item.workNotes}</p>
                         </div>
                     )}
 
-                    {/* Info grid */}
                     <div className="detail-info-grid">
                         <div className="detail-info-row">
                             <UserIcon size={14} className="detail-info-icon" />
@@ -181,14 +176,17 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
                         <div className="detail-info-row">
                             <UserCheck size={14} className="detail-info-icon" />
                             <span className="detail-info-label">Volunteer</span>
-                            <span className="detail-info-value">{item.assignedTo || '—'}</span>
+                            <span className="detail-info-value">{volunteerName}</span>
                         </div>
                         <div className="detail-info-row">
                             <Calendar size={14} className="detail-info-icon" />
-                            <span className="detail-info-label">Reported</span>
-                            <span className="detail-info-value">
-                                {new Date(item.createdAt).toLocaleDateString('en-IN')}
-                            </span>
+                            <span className="detail-info-label">Reported On</span>
+                            <span className="detail-info-value">{new Date(item.createdAt).toLocaleDateString('en-IN')}</span>
+                        </div>
+                        <div className="detail-info-row">
+                            <Clock size={14} className="detail-info-icon" />
+                            <span className="detail-info-label">Submitted On</span>
+                            <span className="detail-info-value">{new Date(item.updatedAt).toLocaleDateString('en-IN')}</span>
                         </div>
                         <div className="detail-info-row">
                             <Tag size={14} className="detail-info-icon" />
@@ -204,63 +202,57 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
                         )}
                     </div>
 
-                    {/* Original complaint description */}
                     {item.description && (
                         <div className="detail-section">
-                            <div className="detail-section-heading">
-                                <FileText size={14} /> Original Complaint
-                            </div>
+                            <div className="detail-section-heading"><FileText size={14} /> Original Complaint</div>
                             <p className="detail-section-text">{item.description}</p>
                         </div>
                     )}
 
-                    {/* Original photo (for comparison) */}
                     {item.photo && !origImgError && (
                         <div className="detail-section">
                             <div className="detail-section-heading">
-                                <ImageIcon size={14} /> Original Complaint Photo
+                                <ImageIcon size={14} /> Original Photo (for comparison)
                             </div>
                             <img
                                 src={item.photo}
                                 alt="Original complaint"
-                                style={{ width: '100%', borderRadius: 8, objectFit: 'cover', maxHeight: 180 }}
+                                style={{ width: '100%', borderRadius: 8, marginTop: 8, objectFit: 'cover', maxHeight: 160, display: 'block', cursor: 'zoom-in' }}
                                 onError={() => setOrigImgError(true)}
+                                onClick={() => setLightboxSrc(item.photo)}
                             />
                         </div>
                     )}
 
                     <div className="detail-divider" />
 
-                    {/* ── APPROVE / REJECT ACTIONS ── */}
+                    {/* APPROVE / REJECT ACTIONS */}
                     {!showRejectForm ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            {/* Approve button */}
                             <button
                                 onClick={handleApprove}
                                 disabled={approving}
                                 style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    gap: 8, padding: '11px 0', borderRadius: 8, border: 'none',
-                                    background: '#16a34a', color: '#fff', fontWeight: 600,
-                                    fontSize: 14, cursor: approving ? 'not-allowed' : 'pointer',
-                                    opacity: approving ? 0.7 : 1
+                                    gap: 8, padding: '12px 0', borderRadius: 8, border: 'none',
+                                    background: approving ? '#86efac' : '#16a34a',
+                                    color: '#fff', fontWeight: 700, fontSize: 14,
+                                    cursor: approving ? 'not-allowed' : 'pointer'
                                 }}
                             >
                                 {approving
                                     ? <><Loader2 size={15} className="spinner" /> Approving...</>
-                                    : <><CheckCircle size={15} /> Approve — Mark as Resolved</>
+                                    : <><CheckCircle size={15} /> Approve — Mark Issue as Resolved</>
                                 }
                             </button>
-
-                            {/* Show reject form */}
                             <button
                                 onClick={() => setShowRejectForm(true)}
                                 disabled={approving}
                                 style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    gap: 8, padding: '11px 0', borderRadius: 8, border: '1.5px solid #fca5a5',
-                                    background: '#fff1f2', color: '#be123c', fontWeight: 600,
-                                    fontSize: 14, cursor: 'pointer'
+                                    gap: 8, padding: '12px 0', borderRadius: 8,
+                                    border: '1.5px solid #fca5a5', background: '#fff1f2',
+                                    color: '#be123c', fontWeight: 700, fontSize: 14, cursor: 'pointer'
                                 }}
                             >
                                 <XCircle size={15} /> Reject & Send Back to Volunteer
@@ -268,20 +260,20 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <div className="detail-section-heading" style={{ marginBottom: 0 }}>
+                            <div className="detail-section-heading">
                                 <XCircle size={14} /> Reason for Rejection
                             </div>
                             <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
-                                This message will be shown to the volunteer so they know what to fix.
+                                This will be shown to the volunteer so they know exactly what needs to be fixed.
                             </p>
                             <textarea
                                 rows={3}
-                                placeholder="e.g. Photo is unclear, work not completed fully, wrong location..."
+                                placeholder="e.g. Photo is unclear, the work is incomplete, please redo and resubmit..."
                                 value={rejectNote}
-                                onChange={(e) => setRejectNote(e.target.value)}
+                                onChange={e => setRejectNote(e.target.value)}
                                 style={{
                                     width: '100%', boxSizing: 'border-box',
-                                    padding: '8px 12px', borderRadius: 7,
+                                    padding: '9px 12px', borderRadius: 7,
                                     border: '1.5px solid #fca5a5',
                                     fontSize: 13, resize: 'vertical', fontFamily: 'inherit'
                                 }}
@@ -291,23 +283,20 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
                                     onClick={handleRejectSubmit}
                                     disabled={rejecting}
                                     style={{
-                                        flex: 1, padding: '10px 0', borderRadius: 8, border: 'none',
-                                        background: '#be123c', color: '#fff', fontWeight: 600,
-                                        fontSize: 14, cursor: rejecting ? 'not-allowed' : 'pointer',
-                                        opacity: rejecting ? 0.7 : 1
+                                        flex: 1, padding: '11px 0', borderRadius: 8, border: 'none',
+                                        background: rejecting ? '#fda4af' : '#be123c',
+                                        color: '#fff', fontWeight: 700, fontSize: 14,
+                                        cursor: rejecting ? 'not-allowed' : 'pointer'
                                     }}
                                 >
-                                    {rejecting
-                                        ? <><Loader2 size={14} className="spinner" /> Rejecting...</>
-                                        : 'Confirm Rejection'
-                                    }
+                                    {rejecting ? <><Loader2 size={14} className="spinner" /> Rejecting...</> : 'Confirm Rejection'}
                                 </button>
                                 <button
                                     onClick={() => { setShowRejectForm(false); setRejectNote(''); }}
                                     style={{
-                                        padding: '10px 16px', borderRadius: 8,
+                                        padding: '11px 18px', borderRadius: 8,
                                         border: '1.5px solid #d1d5db', background: '#fff',
-                                        fontSize: 14, cursor: 'pointer', color: '#374151'
+                                        fontSize: 14, cursor: 'pointer', color: '#374151', fontWeight: 500
                                     }}
                                 >
                                     Cancel
@@ -321,7 +310,7 @@ const ResolutionPanel = ({ item, onClose, onApprove, onReject }) => {
     );
 };
 
-// ── Main Component ─────────────────────────────────────────────────────────
+// ── Main Page Component ─────────────────────────────────────────────────────
 const AdminIssuesUpdates = () => {
     const navigate = useNavigate();
     const { user, signOut } = useAuth();
@@ -333,10 +322,7 @@ const AdminIssuesUpdates = () => {
     const [authChecked, setAuthChecked] = useState(false);
 
     const handleLogout = () => {
-        if (window.confirm('Are you sure you want to logout?')) {
-            signOut();
-            navigate('/');
-        }
+        if (window.confirm('Are you sure you want to logout?')) { signOut(); navigate('/'); }
     };
 
     const getUserInitials = (name) => {
@@ -351,7 +337,7 @@ const AdminIssuesUpdates = () => {
             const res = await axios.get(`${API_BASE_URL}/complaints/pending-requests`, { withCredentials: true });
             setPendingItems(res.data.data || []);
         } catch (err) {
-            setError('Failed to fetch pending requests.');
+            setError('Failed to load pending requests. Please try again.');
             console.error(err.message);
         } finally {
             setLoading(false);
@@ -370,13 +356,8 @@ const AdminIssuesUpdates = () => {
         fetchPending();
     }, [user, navigate, fetchPending, authChecked]);
 
-    const handleApprove = (id) => {
-        setPendingItems(prev => prev.filter(i => i._id !== id));
-    };
-
-    const handleReject = (id) => {
-        setPendingItems(prev => prev.filter(i => i._id !== id));
-    };
+    const handleApprove = (id) => setPendingItems(prev => prev.filter(i => i._id !== id));
+    const handleReject = (id) => setPendingItems(prev => prev.filter(i => i._id !== id));
 
     if (!authChecked || !user) return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -386,7 +367,7 @@ const AdminIssuesUpdates = () => {
 
     return (
         <div className={`all-issues-admin ${selectedItem ? 'has-panel' : ''}`}>
-            {/* Header */}
+
             <header className="admin-header">
                 <div className="admin-header-left">
                     <div className="admin-logo">
@@ -396,21 +377,16 @@ const AdminIssuesUpdates = () => {
                         </div>
                     </div>
                     <nav className="admin-nav">
-                        <Link to="/admin-dashboard" className="admin-nav-link">
-                            <LayoutDashboard size={18} /> Dashboard
-                        </Link>
-                        <Link to="/admin-all-issues" className="admin-nav-link">
-                            <AlertCircle size={18} /> All Issues
-                        </Link>
-                        <Link to="/admin-users-volunteers" className="admin-nav-link">
-                            <Users size={18} /> Users & Volunteers
-                        </Link>
+                        <Link to="/admin-dashboard" className="admin-nav-link"><LayoutDashboard size={18} /> Dashboard</Link>
+                        <Link to="/admin-all-issues" className="admin-nav-link"><AlertCircle size={18} /> All Issues</Link>
+                        <Link to="/admin-users-volunteers" className="admin-nav-link"><Users size={18} /> Users & Volunteers</Link>
                         <Link to="/admin-issues-updates" className="admin-nav-link active">
                             <Clock size={18} /> Issue Updates
                             {pendingItems.length > 0 && (
                                 <span style={{
                                     background: '#ef4444', color: '#fff', borderRadius: '50%',
-                                    fontSize: 11, fontWeight: 700, padding: '1px 6px', marginLeft: 4
+                                    fontSize: 11, fontWeight: 700, padding: '1px 6px', marginLeft: 4,
+                                    minWidth: 18, textAlign: 'center', display: 'inline-block'
                                 }}>
                                     {pendingItems.length}
                                 </span>
@@ -423,71 +399,49 @@ const AdminIssuesUpdates = () => {
                         <div className="user-initials">{getUserInitials(user.name)}</div>
                         <span className="user-name">{user.name}</span>
                     </Link>
-                    <button onClick={handleLogout} className="logout-btn-header">
-                        <ArrowRight size={20} />
-                    </button>
+                    <button onClick={handleLogout} className="logout-btn-header"><ArrowRight size={20} /></button>
                 </div>
             </header>
 
             <div className="main-content">
-                {/* Hero */}
                 <div className="issues-hero">
                     <div className="issues-hero-content">
                         <Clock size={36} />
-                        <h1>Resolution Approvals</h1>
-                        <p>Review volunteer proof photos and approve or reject resolution requests</p>
+                        <h1>Resolution Approval Requests</h1>
+                        <p>Volunteers have marked these issues as resolved. Review the proof photo, then approve or reject.</p>
                     </div>
                 </div>
 
-                {/* Stats strip */}
-                <div className="issues-stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                    <div className="issues-stat-card">
-                        <div className="issues-stat-content">
-                            <div className="issues-stat-info">
-                                <div className="issues-stat-label">Awaiting Review</div>
-                                <div className="issues-stat-value">{pendingItems.length}</div>
-                            </div>
-                            <div className="issues-stat-icon" style={{ backgroundColor: '#ffedd5' }}>
-                                <Clock size={24} color="#f97316" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="issues-stat-card">
-                        <div className="issues-stat-content">
-                            <div className="issues-stat-info">
-                                <div className="issues-stat-label">With Proof Photo</div>
-                                <div className="issues-stat-value">
-                                    {pendingItems.filter(i => i.proofPhoto).length}
+                <div className="issues-stats-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+                    {[
+                        { label: 'Awaiting Review', value: pendingItems.length, bg: '#ffedd5', icon: Clock, iconColor: '#f97316' },
+                        { label: 'With Proof Photo', value: pendingItems.filter(i => i.proofPhoto).length, bg: '#dcfce7', icon: ImageIcon, iconColor: '#16a34a' },
+                        { label: 'No Photo', value: pendingItems.filter(i => !i.proofPhoto).length, bg: '#fff7ed', icon: AlertCircle, iconColor: '#f97316' },
+                    ].map((s, idx) => {
+                        const Icon = s.icon;
+                        return (
+                            <div key={idx} className="issues-stat-card">
+                                <div className="issues-stat-content">
+                                    <div className="issues-stat-info">
+                                        <div className="issues-stat-label">{s.label}</div>
+                                        <div className="issues-stat-value">{s.value}</div>
+                                    </div>
+                                    <div className="issues-stat-icon" style={{ backgroundColor: s.bg }}>
+                                        <Icon size={24} color={s.iconColor} />
+                                    </div>
                                 </div>
                             </div>
-                            <div className="issues-stat-icon" style={{ backgroundColor: '#dbeafe' }}>
-                                <ImageIcon size={24} color="#3b82f6" />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="issues-stat-card">
-                        <div className="issues-stat-content">
-                            <div className="issues-stat-info">
-                                <div className="issues-stat-label">No Photo</div>
-                                <div className="issues-stat-value">
-                                    {pendingItems.filter(i => !i.proofPhoto).length}
-                                </div>
-                            </div>
-                            <div className="issues-stat-icon" style={{ backgroundColor: '#f3e8ff' }}>
-                                <AlertCircle size={24} color="#a855f7" />
-                            </div>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
 
-                {/* Table */}
                 <div className="issues-table-section">
                     <div className="issues-table-header">
                         <div className="issues-table-title">
                             <Clock size={20} />
-                            <h2>Pending Resolutions</h2>
+                            <h2>Pending Volunteer Resolutions</h2>
                         </div>
-                        <p className="issues-table-subtitle">Click any row to review the proof photo and take action</p>
+                        <p className="issues-table-subtitle">Click any row to view the proof photo and take action</p>
                     </div>
 
                     <div className="issues-table-container">
@@ -500,16 +454,15 @@ const AdminIssuesUpdates = () => {
                             <div className="error-state-admin">
                                 <AlertCircle size={24} color="#ef4444" />
                                 <p>{error}</p>
+                                <button onClick={fetchPending} style={{ marginTop: 12, padding: '8px 16px', borderRadius: 6, border: '1px solid #d1d5db', cursor: 'pointer', background: '#fff', fontSize: 13 }}>
+                                    Retry
+                                </button>
                             </div>
                         ) : pendingItems.length === 0 ? (
-                            <div className="empty-state-admin" style={{ padding: '48px 24px', textAlign: 'center' }}>
-                                <CheckCircle size={40} color="#22c55e" style={{ marginBottom: 12 }} />
-                                <p style={{ fontSize: 16, fontWeight: 600, color: '#374151' }}>
-                                    All caught up!
-                                </p>
-                                <p style={{ color: '#9ca3af', marginTop: 4 }}>
-                                    No volunteer resolutions are pending your approval.
-                                </p>
+                            <div className="empty-state-admin" style={{ padding: '60px 24px', textAlign: 'center' }}>
+                                <CheckCircle size={44} color="#22c55e" style={{ marginBottom: 14 }} />
+                                <p style={{ fontSize: 17, fontWeight: 700, color: '#374151', marginBottom: 6 }}>All caught up!</p>
+                                <p style={{ color: '#9ca3af', fontSize: 14 }}>No volunteer resolutions waiting for your approval right now.</p>
                             </div>
                         ) : (
                             <table className="issues-table">
@@ -524,9 +477,9 @@ const AdminIssuesUpdates = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {pendingItems.map((item) => {
+                                    {pendingItems.map(item => {
                                         const isActive = selectedItem?._id === item._id;
-                                        const assignedToName = DEPARTMENTS.includes(item.assignedTo) ? '—' : item.assignedTo;
+                                        const volName = DEPARTMENTS.includes(item.assignedTo) ? '—' : (item.assignedTo || '—');
                                         return (
                                             <tr
                                                 key={item._id}
@@ -535,25 +488,15 @@ const AdminIssuesUpdates = () => {
                                                 style={{ cursor: 'pointer' }}
                                             >
                                                 <td className="issue-title-cell">{item.title}</td>
-                                                <td>
-                                                    <span className="assigned-name-text">{assignedToName || '—'}</span>
-                                                </td>
+                                                <td><span className="assigned-name-text">{volName}</span></td>
                                                 <td>{item.userId?.name || 'Anonymous'}</td>
                                                 <td>
                                                     {item.proofPhoto ? (
-                                                        <span style={{
-                                                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                                                            background: '#dcfce7', color: '#15803d',
-                                                            padding: '3px 8px', borderRadius: 20, fontSize: 12, fontWeight: 600
-                                                        }}>
+                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#dcfce7', color: '#15803d', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
                                                             <ImageIcon size={12} /> Photo uploaded
                                                         </span>
                                                     ) : (
-                                                        <span style={{
-                                                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                                                            background: '#fff7ed', color: '#c2410c',
-                                                            padding: '3px 8px', borderRadius: 20, fontSize: 12, fontWeight: 600
-                                                        }}>
+                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff7ed', color: '#c2410c', padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
                                                             <AlertCircle size={12} /> No photo
                                                         </span>
                                                     )}

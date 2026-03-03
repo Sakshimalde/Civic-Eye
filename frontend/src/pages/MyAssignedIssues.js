@@ -3,12 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext'; 
 import axios from 'axios';
 import { 
-    MapPin, Calendar, User, LogOut, Edit, Award, X, CheckCircle, Clock, Loader2, FileText
+    MapPin, Calendar, User, Edit, Award, X, CheckCircle, 
+    Clock, Loader2, FileText, AlertTriangle, ArrowRight
 } from 'lucide-react';
 import './MyAssignedIssues.css'; 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-    const API_BASE_URL =  `${BACKEND_URL}/api/v1`; 
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API_BASE_URL = `${BACKEND_URL}/api/v1`; 
 
 const MyAssignedIssues = () => {
     const navigate = useNavigate();
@@ -25,24 +26,14 @@ const MyAssignedIssues = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authChecked, setAuthChecked] = useState(false);
 
-    // --- Fetch assigned issues from backend ---
     useEffect(() => {
         const fetchAssignedIssues = async () => {
             if (!user) return;
-
             try {
                 const response = await axios.get(`${API_BASE_URL}/complaints/assigned`, {
-                    headers: { Authorization: `Bearer ${user.token}` }
+                    withCredentials: true
                 });
-
-                const normalizedIssues = response.data.data.map(issue => ({
-                    ...issue,
-                    status: issue.status.toLowerCase(),
-                    pendingUpdate: issue.pendingUpdate || false,
-                    resolutionRejected: issue.resolutionRejected || false,
-                    resolutionRejectionNote: issue.resolutionRejectionNote || '',
-                }));
-                setIssues(normalizedIssues);
+                setIssues(response.data.data || []);
             } catch (error) {
                 console.error("Error fetching assigned issues:", error);
                 alert("Failed to load assigned issues.");
@@ -50,23 +41,19 @@ const MyAssignedIssues = () => {
                 setAuthChecked(true);
             }
         };
-
         fetchAssignedIssues();
     }, [user]);
 
     const stats = useMemo(() => [
-        { label: 'Total Assigned', value: issues.length, color: '#2c5292' },
-        { label: 'In Progress', value: issues.filter(i => i.status === 'inReview').length, color: '#dd6b20' },
-        { label: 'Completed (All Time)', value: issues.filter(i => i.status === 'resolved').length, color: '#38a169' }
+        { label: 'Total Assigned',   value: issues.length,                                                               color: '#2c5292' },
+        { label: 'In Progress',      value: issues.filter(i => i.status === 'inReview' || i.status === 'in progress').length, color: '#dd6b20' },
+        { label: 'Pending Approval', value: issues.filter(i => i.pendingUpdate).length,                                  color: '#7c3aed' },
+        { label: 'Resolved',         value: issues.filter(i => i.status === 'resolved').length,                          color: '#38a169' }
     ], [issues]);
 
     const handleUpdateClick = (issue) => {
         setSelectedIssue(issue);
-        setUpdateForm({
-            status: issue.status || 'inReview',
-            proofPhoto: null,
-            workNotes: issue.workNotes || ''
-        });
+        setUpdateForm({ status: 'inReview', proofPhoto: null, workNotes: issue.workNotes || '' });
         setShowUpdateModal(true);
     };
 
@@ -74,6 +61,10 @@ const MyAssignedIssues = () => {
         e.preventDefault();
         if (!updateForm.workNotes.trim()) {
             alert("Please provide detailed work notes.");
+            return;
+        }
+        if (updateForm.status === 'resolved' && !updateForm.proofPhoto) {
+            alert("A proof photo is required when marking as resolved. The admin needs it to approve your resolution.");
             return;
         }
 
@@ -89,27 +80,20 @@ const MyAssignedIssues = () => {
             const response = await axios.put(
                 `${API_BASE_URL}/complaints/update-status/${selectedIssue._id}`,
                 formData,
-                { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${user.token}` } }
+                { headers: { 'Content-Type': 'multipart/form-data' }, withCredentials: true }
             );
 
-            // Update the issue in local state
-           setIssues(prevIssues => prevIssues.map(i =>
-    i._id === selectedIssue._id 
-        ? { 
-            ...i, 
-            status: updateForm.status === 'resolved' ? i.status : updateForm.status,
-            workNotes: updateForm.workNotes,
-            pendingUpdate: updateForm.status === 'resolved' ? true : i.pendingUpdate,
-            resolutionRejected: false,
-            resolutionRejectionNote: '',
-        }
-        : i
-));
+            // ✅ Use server response to update local state — server sets pendingUpdate correctly
+            const updatedData = response.data.data;
+            setIssues(prev => prev.map(i =>
+                i._id === selectedIssue._id ? { ...i, ...updatedData } : i
+            ));
 
-            const successMsg = updateForm.status === 'resolved'
-                ? "Resolution submitted! Awaiting admin approval."
+            const msg = updateForm.status === 'resolved'
+                ? "✅ Resolution submitted! Waiting for admin to review your proof photo."
                 : "Status updated successfully!";
-            alert(successMsg);
+            alert(msg);
+
             setShowUpdateModal(false);
             setSelectedIssue(null);
             setUpdateForm({ status: 'inReview', proofPhoto: null, workNotes: '' });
@@ -131,24 +115,40 @@ const MyAssignedIssues = () => {
     const getUserInitials = (name) => {
         if (!name) return 'V';
         const parts = name.split(' ');
-        return parts.length > 1 ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() : parts[0][0].toUpperCase();
+        return parts.length > 1 
+            ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() 
+            : parts[0][0].toUpperCase();
     };
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'recived': return 'status-pending';
-            case 'inReview': return 'status-in-progress';
-            case 'resolved': return 'status-resolved';
-            default: return 'status-default';
+    const getStatusLabel = (issue) => {
+        if (issue.pendingUpdate) return 'Pending Approval';
+        switch (issue.status) {
+            case 'recived':     return 'Received';
+            case 'inReview':    return 'In Review';
+            case 'in progress': return 'In Progress';
+            case 'resolved':    return 'Resolved';
+            default:            return issue.status;
         }
     };
 
-    const getPriorityColor = (priority) => {
-        switch (priority) {
-            case 'high': return 'priority-high';
+    const getStatusClass = (issue) => {
+        if (issue.pendingUpdate)                           return 'status-pending-approval';
+        if (issue.resolutionRejected && !issue.pendingUpdate) return 'status-rejected';
+        switch (issue.status) {
+            case 'recived':     return 'status-pending';
+            case 'inReview':
+            case 'in progress': return 'status-in-progress';
+            case 'resolved':    return 'status-resolved';
+            default:            return 'status-default';
+        }
+    };
+
+    const getPriorityColor = (p) => {
+        switch (p) {
+            case 'high':   return 'priority-high';
             case 'medium': return 'priority-medium';
-            case 'low': return 'priority-low';
-            default: return 'priority-medium';
+            case 'low':    return 'priority-low';
+            default:       return 'priority-medium';
         }
     };
 
@@ -156,22 +156,18 @@ const MyAssignedIssues = () => {
         return (
             <div className="loading-state full-page-loading">
                 <Loader2 size={32} className="loading-spinner" />
-                <p>Checking authentication status...</p>
+                <p>Loading your assigned issues...</p>
             </div>
         );
     }
-
-    // const activeIssues = issues.filter(i => i.status !== 'resolved');
-const activeIssues = issues; // Show everything
 
     return (
         <div className="my-assigned-container">
             {/* Header */}
             <header className="header-top">
-                
                 <nav className="nav-links">
                     <Link to="/volunteer-dashboard">Dashboard</Link>
-                    <Link to="/MyAssignedIssues"className="active">My Assigned Issues</Link>
+                    <Link to="/MyAssignedIssues" className="active">My Assigned Issues</Link>
                     <Link to="/volunteer-browser-issues">Browse Issues</Link>
                 </nav>
                 <div className="header-right">
@@ -180,14 +176,13 @@ const activeIssues = issues; // Show everything
                         <span className="user-name">{user.name}</span>
                     </div>
                     <button onClick={handleLogout} className="logout-btn-header" title="Logout">
-                        <LogOut size={20} />
+                        <ArrowRight size={20} />
                     </button>
                 </div>
             </header>
 
             <hr />
 
-            {/* Hero */}
             <div className="assigned-hero">
                 <div className="hero-content">
                     <Award size={32} className="hero-icon" />
@@ -211,96 +206,108 @@ const activeIssues = issues; // Show everything
 
             <hr />
 
-            {/* Active Assignments */}
+            {/* Issue List */}
             <div className="assignments-section">
                 <div className="section-header">
                     <FileText size={20} />
-                    <h2>Assigned Issues ({activeIssues.length})</h2>
+                    <h2>Assigned Issues ({issues.length})</h2>
                 </div>
+
                 <div className="assignments-list">
-                    {activeIssues.length > 0 ? activeIssues.map(issue => (
+                    {issues.length > 0 ? issues.map(issue => (
                         <div key={issue._id} className="assignment-card">
                             <div className="assignment-main">
                                 <div className="assignment-header">
                                     <h3>{issue.title}</h3>
-                                    <span className={`status-badge ${getStatusColor(issue.status)}`}>
-                                        {issue.status}
+                                    <span className={`status-badge ${getStatusClass(issue)}`}>
+                                        {getStatusLabel(issue)}
                                     </span>
                                     <span className={`priority-badge ${getPriorityColor(issue.priority)}`}>
                                         {issue.priority || 'medium'}
                                     </span>
                                 </div>
+
                                 <p>{issue.description}</p>
+
                                 <div className="assignment-meta">
                                     <div className="meta-item"><MapPin size={14} /><span>{issue.address?.[0]}</span></div>
                                     <div className="meta-item"><Calendar size={14} /><span>Reported: {new Date(issue.createdAt).toLocaleDateString()}</span></div>
                                     <div className="meta-item"><User size={14} /><span>By: {issue.userId?.name}</span></div>
                                 </div>
+
                                 <div className="assignment-dates">Assigned To: {issue.assignedTo}</div>
 
-                                {/* ── Pending approval banner ── */}
+                                {/* ✅ AWAITING APPROVAL BANNER — shown after volunteer submits resolved */}
                                 {issue.pendingUpdate && (
                                     <div style={{
-                                        marginTop: 10,
-                                        background: '#fff7ed',
-                                        border: '1px solid #fed7aa',
+                                        marginTop: 12,
+                                        background: '#fffbeb',
+                                        border: '1.5px solid #fcd34d',
                                         borderRadius: 8,
-                                        padding: '9px 13px',
+                                        padding: '10px 14px',
                                         display: 'flex',
+                                        gap: 10,
                                         alignItems: 'flex-start',
-                                        gap: 8,
                                         fontSize: 13,
                                         color: '#92400e'
                                     }}>
-                                        <Clock size={15} style={{ marginTop: 1, flexShrink: 0 }} />
+                                        <Clock size={16} style={{ marginTop: 1, flexShrink: 0, color: '#d97706' }} />
                                         <div>
                                             <strong>Awaiting Admin Approval</strong>
-                                            <div style={{ marginTop: 2, color: '#a16207' }}>
-                                                Your resolution has been submitted and is pending review.
+                                            <div style={{ marginTop: 3, color: '#78350f' }}>
+                                                Your resolution and proof photo have been submitted. 
+                                                The admin will review and either approve or send it back to you.
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* ── Resolution rejected banner ── */}
+                                {/* ✅ REJECTION BANNER — shown when admin rejects the resolution */}
                                 {issue.resolutionRejected && !issue.pendingUpdate && (
                                     <div style={{
-                                        marginTop: 10,
+                                        marginTop: 12,
                                         background: '#fff1f2',
-                                        border: '1px solid #fecdd3',
+                                        border: '1.5px solid #fca5a5',
                                         borderRadius: 8,
-                                        padding: '9px 13px',
+                                        padding: '10px 14px',
                                         fontSize: 13,
                                         color: '#be123c'
                                     }}>
-                                        <div style={{ fontWeight: 700, marginBottom: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <X size={14} /> Resolution Rejected by Admin
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 6 }}>
+                                            <AlertTriangle size={15} />
+                                            Resolution Rejected by Admin
                                         </div>
                                         <div>
                                             <strong>Reason: </strong>
                                             {issue.resolutionRejectionNote || 'No reason provided.'}
                                         </div>
-                                        <div style={{ marginTop: 5, color: '#9ca3af', fontSize: 12 }}>
-                                            Please address the feedback and resubmit below.
+                                        <div style={{ marginTop: 6, color: '#6b7280', fontSize: 12 }}>
+                                            Please fix the issue and resubmit your resolution using the Update Status button.
                                         </div>
                                     </div>
                                 )}
                             </div>
+
+                            {/* Disable update button while pending admin review */}
                             <button
-    className={`update-btn ${issue.status === 'resolved' ? 'resolved-btn' : ''}`}
-    onClick={() => handleUpdateClick(issue)}
-    disabled={issue.pendingUpdate}
-    title={issue.pendingUpdate ? 'Awaiting admin approval — cannot update yet' : 'Update status'}
-    style={issue.pendingUpdate ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
->
-    {issue.pendingUpdate
-        ? <><Clock size={16} /> Pending Approval</>
-        : <><Edit size={16} /> Update Status</>
-    }
-</button>
-
-                            
-
+                                className={`update-btn ${issue.status === 'resolved' && !issue.resolutionRejected ? 'resolved-btn' : ''}`}
+                                onClick={() => handleUpdateClick(issue)}
+                                disabled={issue.pendingUpdate || issue.status === 'resolved'}
+                                title={
+                                    issue.pendingUpdate ? 'Awaiting admin approval — cannot update yet' 
+                                    : issue.status === 'resolved' ? 'This issue is resolved'
+                                    : 'Update status'
+                                }
+                                style={{ 
+                                    opacity: (issue.pendingUpdate || issue.status === 'resolved') ? 0.5 : 1, 
+                                    cursor: (issue.pendingUpdate || issue.status === 'resolved') ? 'not-allowed' : 'pointer' 
+                                }}
+                            >
+                                {issue.pendingUpdate
+                                    ? <><Clock size={16} /> Awaiting Approval</>
+                                    : <><Edit size={16} /> Update Status</>
+                                }
+                            </button>
                         </div>
                     )) : (
                         <div className="no-assignments-message">
@@ -311,123 +318,126 @@ const activeIssues = issues; // Show everything
                 </div>
             </div>
 
-            {/* Update Modal */}
-            {showUpdateModal && selectedIssue && (
-                <div className="modal-overlay" onClick={() => setShowUpdateModal(false)}>
-                    <div className="modal-container" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <div className="modal-title-section">
-                                <div className="modal-title-row">
-                                    <Edit size={24} className="modal-title-icon" /> {/* Added Edit icon */}
-                                    <h3>Update Issue Status</h3>
-                                </div>
-                                <span className="modal-subtitle">Submit a status update request for admin approval</span>
-                            </div>
-                            <button className="modal-close-btn" onClick={() => setShowUpdateModal(false)} disabled={isSubmitting}><X size={20} /></button>
-                        </div>
+            {/* Update Modal */}
+            {showUpdateModal && selectedIssue && (
+                <div className="modal-overlay" onClick={() => setShowUpdateModal(false)}>
+                    <div className="modal-container" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="modal-title-section">
+                                <div className="modal-title-row">
+                                    <Edit size={24} className="modal-title-icon" />
+                                    <h3>Update Issue Status</h3>
+                                </div>
+                                <span className="modal-subtitle">Submit a status update for admin approval</span>
+                            </div>
+                            <button className="modal-close-btn" onClick={() => setShowUpdateModal(false)} disabled={isSubmitting}>
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                        <form className="modal-body-wrapper" onSubmit={handleSubmitUpdate}> {/* Renamed class to modal-body-wrapper */}
-                            
-                            {/* 1. Issue Information (Top Section - Blue Background) */}
-                            <div className="modal-section issue-info-section">
-                                <div className="section-title-icon">
-                                    <Clock size={20} /> <h4>Issue Information</h4>
-                                </div>
-                                <div className="info-grid">
-                                    <div className="info-field">
-                                        <label>Issue Title</label>
-                                        <span className="info-value">{selectedIssue.title}</span>
-                                    </div>
-                                    <div className="info-field">
-                                        <label>Category</label>
-                                        <span className="info-value">{selectedIssue.assignedTo}</span>
-                                    </div>
-                                    <div className="info-field">
-                                        <label>Volunteer Name</label>
-                                        <span className="info-value">{user.name}</span>
-                                    </div>
-                                    <div className="info-field">
-                                        <label>Current Status</label>
-                                        <span className="info-value">{selectedIssue.status}</span>
-                                    </div>
-                                    <div className="info-field full-width">
-                                        <label>Location</label>
-                                        <span className="info-value">{selectedIssue.address?.[0]}</span>
-                                    </div>
-                                </div>
-                            </div>
+                        <form className="modal-body-wrapper" onSubmit={handleSubmitUpdate}>
+                            {/* Issue Info */}
+                            <div className="modal-section issue-info-section">
+                                <div className="section-title-icon">
+                                    <Clock size={20} /> <h4>Issue Information</h4>
+                                </div>
+                                <div className="info-grid">
+                                    <div className="info-field">
+                                        <label>Issue Title</label>
+                                        <span className="info-value">{selectedIssue.title}</span>
+                                    </div>
+                                    <div className="info-field">
+                                        <label>Category</label>
+                                        <span className="info-value">{selectedIssue.assignedTo}</span>
+                                    </div>
+                                    <div className="info-field">
+                                        <label>Volunteer Name</label>
+                                        <span className="info-value">{user.name}</span>
+                                    </div>
+                                    <div className="info-field">
+                                        <label>Current Status</label>
+                                        <span className="info-value">{selectedIssue.status}</span>
+                                    </div>
+                                    <div className="info-field full-width">
+                                        <label>Location</label>
+                                        <span className="info-value">{selectedIssue.address?.[0]}</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                            {/* 2. Status Update (Middle Section - White Background) */}
-                            <div className="modal-section status-update-section">
-                                <div className="section-title-icon">
-                                    <CheckCircle size={20} /> <h4>Status Update</h4>
-                                </div>
-                                <div className="form-field">
-                                    <label>New Status *</label>
-                                    <select
-                                        className="form-select" // Use class from original CSS to style select
-                                        value={updateForm.status}
-                                        onChange={e => setUpdateForm({ ...updateForm, status: e.target.value })}
-                                        required
-                                    >
-                                        <option value="recived">Received</option>
-                                        <option value="inReview">In Review</option>
-                                        <option value="resolved">Resolved</option>
-                                    </select>
-                                    <small>Choose the appropriate status for this issue</small>
+                            {/* Status */}
+                            <div className="modal-section status-update-section">
+                                <div className="section-title-icon">
+                                    <CheckCircle size={20} /> <h4>Status Update</h4>
+                                </div>
+                                <div className="form-field">
+                                    <label>New Status *</label>
+                                    <select
+                                        className="form-select"
+                                        value={updateForm.status}
+                                        onChange={e => setUpdateForm({ ...updateForm, status: e.target.value })}
+                                        required
+                                    >
+                                        <option value="inReview">In Review</option>
+                                        <option value="resolved">Resolved (requires admin approval + proof photo)</option>
+                                    </select>
                                     {updateForm.status === 'resolved' && (
-                                        <div style={{
-                                            marginTop: 8,
-                                            background: '#fff7ed',
-                                            border: '1px solid #fed7aa',
-                                            borderRadius: 6,
-                                            padding: '7px 11px',
-                                            fontSize: 12,
-                                            color: '#92400e',
-                                            display: 'flex',
-                                            alignItems: 'flex-start',
-                                            gap: 6
-                                        }}>
-                                            <Clock size={13} style={{ marginTop: 1, flexShrink: 0 }} />
-                                            <span>
-                                                Marking as <strong>Resolved</strong> will submit your update for admin approval.
-                                                The issue will only be officially resolved once the admin reviews your proof photo.
-                                            </span>
-                                        </div>
+                                        <small style={{ color: '#d97706', fontWeight: 500 }}>
+                                            ⚠️ Submitting as resolved will send your proof photo to admin. Status won't change until they approve.
+                                        </small>
                                     )}
-                                </div>
-                            </div>
+                                </div>
+                            </div>
 
-                            {/* 3. Documentation (Bottom Section - Light Green Background) */}
-                            <div className="modal-section documentation-section">
-                                <div className="section-title-icon">
-                                    <FileText size={20} /> <h4>Documentation</h4>
-                                </div>
-                                <div className="form-field">
-                                    <label>Proof Photo</label>
-                                    <input type="file" className="form-file-input" accept="image/*" onChange={e => setUpdateForm({ ...updateForm, proofPhoto: e.target.files[0] })} />
-                                    <small>Upload photo evidence of work completed (recommended)</small>
-                                </div>
-                                <div className="form-field">
-                                    <label>Work Notes *</label>
-                                    <textarea className="form-textarea" rows="4" value={updateForm.workNotes} onChange={e => setUpdateForm({ ...updateForm, workNotes: e.target.value })} required></textarea>
-                                    <small>Provide detailed information about the work completed</small>
-                                </div>
-                            </div>
+                            {/* Documentation */}
+                            <div className="modal-section documentation-section">
+                                <div className="section-title-icon">
+                                    <FileText size={20} /> <h4>Documentation</h4>
+                                </div>
+                                <div className="form-field">
+                                    <label>
+                                        Proof Photo
+                                        {updateForm.status === 'resolved' && (
+                                            <span style={{ color: '#ef4444', marginLeft: 4 }}>* Required for resolved</span>
+                                        )}
+                                    </label>
+                                    <input
+                                        type="file"
+                                        className="form-file-input"
+                                        accept="image/*"
+                                        onChange={e => setUpdateForm({ ...updateForm, proofPhoto: e.target.files[0] })}
+                                    />
+                                    <small>Upload photo evidence of the completed work</small>
+                                </div>
+                                <div className="form-field">
+                                    <label>Work Notes *</label>
+                                    <textarea
+                                        className="form-textarea"
+                                        rows="4"
+                                        placeholder="Describe the work performed and current status..."
+                                        value={updateForm.workNotes}
+                                        onChange={e => setUpdateForm({ ...updateForm, workNotes: e.target.value })}
+                                        required
+                                    />
+                                    <small>Provide detailed information about the work completed</small>
+                                </div>
+                            </div>
 
-                            <div className="modal-actions">
-                                <button type="submit" className="btn-submit" disabled={isSubmitting}>
-                                    {isSubmitting ? <><Loader2 size={20} className="spinner" /> Submitting...</> : <><CheckCircle size={20} /> Submit for Approval</>}
-                                </button>
-                                <button type="button" className="btn-cancel" onClick={() => setShowUpdateModal(false)}>Cancel</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-                        
-
+                            <div className="modal-actions">
+                                <button type="submit" className="btn-submit" disabled={isSubmitting}>
+                                    {isSubmitting
+                                        ? <><Loader2 size={20} className="spinner" /> Submitting...</>
+                                        : <><CheckCircle size={20} /> {updateForm.status === 'resolved' ? 'Submit for Admin Approval' : 'Update Status'}</>
+                                    }
+                                </button>
+                                <button type="button" className="btn-cancel" onClick={() => setShowUpdateModal(false)}>
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -829,3 +829,18 @@ hr {
         width: 100%;
     }
 }
+/* ── Add these to your MyAssignedIssues.css ── */
+
+/* Pending admin approval badge */
+.status-pending-approval {
+    background-color: #ede9fe;
+    color: #6d28d9;
+    border: 1px solid #c4b5fd;
+}
+
+/* Resolution was rejected by admin */
+.status-rejected {
+    background-color: #fff1f2;
+    color: #be123c;
+    border: 1px solid #fca5a5;
+}
