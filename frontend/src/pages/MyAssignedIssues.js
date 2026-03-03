@@ -9,7 +9,29 @@ import {
 import './MyAssignedIssues.css'; 
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API_BASE_URL = `${BACKEND_URL}/api/v1`; 
+const API_BASE_URL = `${BACKEND_URL}/api/v1`;
+
+// Maps backend department string → readable category name
+const DEPARTMENT_CATEGORY_MAP = {
+    "Municipal sanitation and public health": "Garbage & Waste",
+    "Roads and street infrastructure":        "Potholes & Roads",
+    "Street lighting and electrical assets":  "Street Lights",
+    "Water, sewerage, and stormwater":        "Water Issues",
+    "Ward/zone office and central admin":     "General / Admin",
+};
+
+// Returns readable category from a complaint object.
+// After a volunteer is assigned, assignedTo becomes the volunteer's name,
+// so we need a separate field. For now we store category on the issue title
+// mapping — fall back to showing assignedTo only if it IS a department.
+const getCategory = (issue) => {
+    if (DEPARTMENT_CATEGORY_MAP[issue.assignedTo]) {
+        return DEPARTMENT_CATEGORY_MAP[issue.assignedTo];
+    }
+    // assignedTo is already a volunteer name — category unknown from this field
+    // show a sensible fallback
+    return issue.category || "Community Issue";
+};
 
 const MyAssignedIssues = () => {
     const navigate = useNavigate();
@@ -33,7 +55,11 @@ const MyAssignedIssues = () => {
                 const response = await axios.get(`${API_BASE_URL}/complaints/assigned`, {
                     withCredentials: true
                 });
-                setIssues(response.data.data || []);
+                setIssues(response.data.data.map(issue => ({
+                    ...issue,
+                    // Preserve the original department as 'category' before assignedTo gets overwritten by volunteer name
+                    category: DEPARTMENT_CATEGORY_MAP[issue.assignedTo] || issue.category || "Community Issue",
+                })) || []);
             } catch (error) {
                 console.error("Error fetching assigned issues:", error);
                 alert("Failed to load assigned issues.");
@@ -348,7 +374,7 @@ const MyAssignedIssues = () => {
                                     </div>
                                     <div className="info-field">
                                         <label>Category</label>
-                                        <span className="info-value">{selectedIssue.assignedTo}</span>
+                                        <span className="info-value">{getCategory(selectedIssue)}</span>
                                     </div>
                                     <div className="info-field">
                                         <label>Volunteer Name</label>
@@ -403,9 +429,19 @@ const MyAssignedIssues = () => {
                                     </label>
                                     <input
                                         type="file"
-                                        className="form-file-input"
                                         accept="image/*"
                                         onChange={e => setUpdateForm({ ...updateForm, proofPhoto: e.target.files[0] })}
+                                        style={{
+                                            display: 'block',
+                                            width: '100%',
+                                            padding: '8px',
+                                            marginTop: 4,
+                                            border: '1.5px dashed #d1d5db',
+                                            borderRadius: 6,
+                                            fontSize: 13,
+                                            cursor: 'pointer',
+                                            background: '#f9fafb',
+                                        }}
                                     />
                                     <small>Upload photo evidence of the completed work</small>
                                 </div>
