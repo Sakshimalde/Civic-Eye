@@ -192,7 +192,7 @@ const MyAssignedIssues = () => {
             {/* Header */}
             <header className="header-top">
                 <nav className="nav-links">
-                    <Link to="/volunteer-dashboard">Dashboard</Link>
+                    <Link to="/volunteer">Dashboard</Link>
                     <Link to="/MyAssignedIssues" className="active">My Assigned Issues</Link>
                     <Link to="/volunteer-browser-issues">Browse Issues</Link>
                 </nav>
