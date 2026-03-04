@@ -96,7 +96,7 @@ const AdminDashboard = () => {
       icon: AlertCircle,
       bgColor: '#dbeafe',
       iconColor: '#3b82f6',
-      route: '/all-issues'
+      route: '/admin-all-issues'
     },
     {
       title: 'Users & Volunteers',
@@ -104,7 +104,7 @@ const AdminDashboard = () => {
       icon: Users,
       bgColor: '#dcfce7',
       iconColor: '#22c55e',
-      route: '/users-volunteers'
+      route: '/admin-users-volunteers'
     },
     {
       title: 'Issue Updates',
@@ -112,7 +112,7 @@ const AdminDashboard = () => {
       icon: Clock,
       bgColor: '#ffedd5',
       iconColor: '#f97316',
-      route: '/issue-updates'
+      route: '/admin-issue-updates'
     }
   ];
 
