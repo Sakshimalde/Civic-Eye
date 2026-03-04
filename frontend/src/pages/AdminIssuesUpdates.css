@@ -72,7 +72,7 @@
   color: #fff;
   text-align: center;
 }
-.issues-hero-content { max-width: 1280px; margin: 0 auto; }
+.issues-hero-content { width: 100%; }
 .issues-hero-content h1 { font-size: 2rem; font-weight: 700; margin: 0.75rem 0 0.5rem; }
 .issues-hero-content p { font-size: 1rem; opacity: 0.9; margin: 0; }
 
@@ -81,8 +81,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.25rem;
-  max-width: 1280px;
-  margin: -1.5rem auto 2rem;
+  margin: -1.5rem 0 2rem;
   padding: 0 2rem;
 }
 .issues-stat-card {
@@ -103,8 +102,9 @@
   background: #fff;
   border-radius: 16px;
   padding: 2rem;
-  margin: 0 2rem 2rem;
+  margin: 0 0 2rem;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border-radius: 0;
 }
 .issues-table-title {
   display: flex; align-items: center; gap: 0.5rem;
@@ -377,7 +377,7 @@
 
 @media (max-width: 768px) {
   .issues-stats-grid { grid-template-columns: 1fr; padding: 0 1rem; }
-  .issues-table-section { margin: 0 1rem 1rem; padding: 1.25rem; }
+  .issues-table-section { margin: 0; padding: 1.25rem; }
   .admin-nav { display: none; }
   .issues-table { min-width: 600px; }
 }
@@ -455,7 +455,7 @@
   color: #fff;
   text-align: center;
 }
-.issues-hero-content { max-width: 1280px; margin: 0 auto; }
+.issues-hero-content { width: 100%; }
 .issues-hero-content h1 { font-size: 2rem; font-weight: 700; margin: 0.75rem 0 0.5rem; }
 .issues-hero-content p { font-size: 1rem; opacity: 0.9; margin: 0; }
 
@@ -464,8 +464,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.25rem;
-  max-width: 1280px;
-  margin: -1.5rem auto 2rem;
+  margin: -1.5rem 0 2rem;
   padding: 0 2rem;
 }
 .issues-stat-card {
@@ -486,8 +485,9 @@
   background: #fff;
   border-radius: 16px;
   padding: 2rem;
-  margin: 0 2rem 2rem;
+  margin: 0 0 2rem;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border-radius: 0;
 }
 .issues-table-title {
   display: flex; align-items: center; gap: 0.5rem;
@@ -760,7 +760,7 @@
 
 @media (max-width: 768px) {
   .issues-stats-grid { grid-template-columns: 1fr; padding: 0 1rem; }
-  .issues-table-section { margin: 0 1rem 1rem; padding: 1.25rem; }
+  .issues-table-section { margin: 0; padding: 1.25rem; }
   .admin-nav { display: none; }
   .issues-table { min-width: 600px; }
 }

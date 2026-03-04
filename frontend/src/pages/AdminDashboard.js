@@ -112,7 +112,7 @@ const AdminDashboard = () => {
       icon: Clock,
       bgColor: '#ffedd5',
       iconColor: '#f97316',
-      route: '/admin-issue-updates'
+      route: '/admin-issues-updates'
     }
   ];
 
