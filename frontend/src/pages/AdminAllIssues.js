@@ -75,6 +75,7 @@ const IssueDetailPanel = ({ issue, volunteers, onClose, onAssign, onReject }) =>
         : issue.address;
 
     const statusLabel = isRejected ? 'Rejected' : mapStatus(issue.rawStatus);
+    const isResolved  = (fullData?.status || issue.rawStatus) === 'resolved';
     const sc = isRejected
         ? statusColorMap['rejected']
         : (statusColorMap[statusLabel.toLowerCase()] || statusColorMap['pending']);
@@ -272,22 +273,24 @@ const IssueDetailPanel = ({ issue, volunteers, onClose, onAssign, onReject }) =>
                                 </div>
                             </div>
 
-                            {/* Reject */}
-                            <div className="detail-section">
-                                <button
-                                    className="detail-reject-btn"
-                                    onClick={handleReject}
-                                    disabled={rejecting}
-                                >
-                                    {rejecting
-                                        ? <><Loader2 size={14} className="spinner" /> Rejecting...</>
-                                        : <><X size={14} /> Reject This Complaint</>
-                                    }
-                                </button>
-                                <p className="detail-reject-hint">
-                                    Rejecting stops all further processing and notifies the citizen with your reason.
-                                </p>
-                            </div>
+                            {/* Reject — only shown when issue is NOT resolved */}
+                            {!isResolved && (
+                                <div className="detail-section">
+                                    <button
+                                        className="detail-reject-btn"
+                                        onClick={handleReject}
+                                        disabled={rejecting}
+                                    >
+                                        {rejecting
+                                            ? <><Loader2 size={14} className="spinner" /> Rejecting...</>
+                                            : <><X size={14} /> Reject This Complaint</>
+                                        }
+                                    </button>
+                                    <p className="detail-reject-hint">
+                                        Rejecting stops all further processing and notifies the citizen with your reason.
+                                    </p>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
@@ -391,15 +394,17 @@ const AllIssuesAdmin = () => {
     }, [allIssues, searchTerm]);
 
     const dynamicStats = useMemo(() => {
-        const total = allIssues.length;
+        const total      = allIssues.length;
         const inProgress = allIssues.filter(i => i.rawStatus === 'in progress').length;
-        const resolved = allIssues.filter(i => i.rawStatus === 'resolved' && !i.isRejected).length;
-        const pending = allIssues.filter(i => i.rawStatus === 'recived' && !i.isRejected).length;
+        const resolved   = allIssues.filter(i => i.rawStatus === 'resolved' && !i.isRejected).length;
+        const pending    = allIssues.filter(i => i.rawStatus === 'recived'   && !i.isRejected).length;
+        const rejected   = allIssues.filter(i => i.isRejected).length;
         return [
-            { label: 'Total Issues', value: total, icon: BarChart3, color: '#e5e7eb' },
-            { label: 'In Progress', value: inProgress, icon: Clock, color: '#dbeafe' },
-            { label: 'Resolved', value: resolved, icon: CheckCircle, color: '#dcfce7' },
-            { label: 'Pending', value: pending, icon: AlertCircle, color: '#ffedd5' },
+            { label: 'Total Issues', value: total,      icon: BarChart3,   color: '#e5e7eb' },
+            { label: 'Pending',      value: pending,    icon: AlertCircle, color: '#ffedd5' },
+            { label: 'In Progress',  value: inProgress, icon: Clock,       color: '#dbeafe' },
+            { label: 'Resolved',     value: resolved,   icon: CheckCircle, color: '#dcfce7' },
+            { label: 'Rejected',     value: rejected,   icon: X,           color: '#fff1f2' },
         ];
     }, [allIssues]);
 
@@ -427,7 +432,7 @@ const AllIssuesAdmin = () => {
     if (!user) return null;
 
     return (
-        <div className={`all-issues-admin ${selectedIssue ? 'has-panel' : ''}`}>
+        <div className="all-issues-admin">
             <header className="admin-header">
                 <div className="admin-header-left">
                     <div className="admin-logo">
@@ -463,7 +468,7 @@ const AllIssuesAdmin = () => {
                     </div>
                 </div>
 
-                <div className="issues-stats-grid">
+                <div className="issues-stats-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
                     {dynamicStats.map((stat, idx) => {
                         const Icon = stat.icon;
                         return (

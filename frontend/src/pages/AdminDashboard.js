@@ -96,7 +96,7 @@ const AdminDashboard = () => {
       icon: AlertCircle,
       bgColor: '#dbeafe',
       iconColor: '#3b82f6',
-      route: '/admin/all-issues'
+      route: '/all-issues'
     },
     {
       title: 'Users & Volunteers',
@@ -104,7 +104,7 @@ const AdminDashboard = () => {
       icon: Users,
       bgColor: '#dcfce7',
       iconColor: '#22c55e',
-      route: '/admin/users-volunteers'
+      route: '/users-volunteers'
     },
     {
       title: 'Issue Updates',
@@ -112,7 +112,7 @@ const AdminDashboard = () => {
       icon: Clock,
       bgColor: '#ffedd5',
       iconColor: '#f97316',
-      route: '/admin/issue-updates'
+      route: '/issue-updates'
     }
   ];
 
@@ -149,10 +149,10 @@ const AdminDashboard = () => {
               <FileText size={18} />
               Admin Requests
             </Link> */}
-            {/* <Link to="/admin-issues-updates" className="admin-nav-link">
+            <Link to="/admin-issues-updates" className="admin-nav-link">
               <Clock size={18} />
               Issue Updates
-            </Link> */}
+            </Link>
           </nav>
         </div>
         <div className="user-profile">
