@@ -928,10 +928,10 @@
 }
 
 .step-number {
-  position: absolute;
+  /* position: absolute; */
   top: 0;
   right: 0;
-  background-color: #2c5292;
+  /* background-color: #2c5292; */
   color: white;
   width: 24px;
   height: 24px;
@@ -939,7 +939,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 0.875rem;
+  /* font-size: 0.875rem; */
   font-weight: bold;
 }
 
