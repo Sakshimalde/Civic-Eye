@@ -87,25 +87,30 @@ const Dashboard = () => {
             pendingIssues: 0,
         };
         const categoryCounts = {
-            'Garbage & Waste': { count: 0, icon: <Trash2 size={24} /> },
-            'Potholes': { count: 0, icon: <Wrench size={24} /> },
-            'Water Issues': { count: 0, icon: <Droplet size={24} /> },
-            'Street Lights': { count: 0, icon: <Lightbulb size={24} /> },
-            'Other': { count: 0, icon: <FileText size={24} /> },
+            'Garbage & Waste': { count: 0, icon: '🗑️', color: '#E53E3E' },
+            'Potholes':        { count: 0, icon: '🕳️', color: '#DD6B20' },
+            'Water Issues':    { count: 0, icon: '💧', color: '#3182CE' },
+            'Street Lights':   { count: 0, icon: '💡', color: '#D69E2E' },
+            'Vandalism':       { count: 0, icon: '🎨', color: '#805AD5' },
+            'Other':           { count: 0, icon: '📋', color: '#718096' },
         };
 
         allComplaints.forEach(comp => {
-            // Normalise status: lowercase + trim to handle any spelling variation
             const status = (comp.status || '').toLowerCase().trim();
-
-            if (status === 'resolved') {
-                totals.resolvedIssues++;
-            } else if (status === 'recived' || status === 'received') {
-                totals.pendingIssues++;
-                totals.activeIssues++;
-            } else if (status === 'inreview' || status === 'in review') {
-                totals.activeIssues++;
-            }
+            if (status === 'resolved') { totals.resolvedIssues++; }
+            else if (status === 'recived' || status === 'received') { totals.pendingIssues++; totals.activeIssues++; }
+            else if (status === 'inreview' || status === 'in review') { totals.activeIssues++; }
+        
+            // ← ADD THIS:
+            const reverseCategoryMap = {
+                'Municipal sanitation and public health': 'Garbage & Waste',
+                'Roads and street infrastructure': 'Potholes',
+                'Street lighting and electrical assets': 'Street Lights',
+                'Water, sewerage, and stormwater': 'Water Issues',
+                'Ward/zone office and central admin': 'Vandalism',
+            };
+            const cat = reverseCategoryMap[comp.assignedTo] || 'Other';
+            if (categoryCounts[cat]) categoryCounts[cat].count++;
         });
 
         // Get the top 3 recent reports (sorted by creation time)
@@ -124,13 +129,13 @@ const Dashboard = () => {
         }));
         
         // Convert category map back to array format for rendering
-        const finalCategories = Object.keys(categoryCounts)
-            .filter(cat => categoryCounts[cat].count > 0 || cat !== 'Other') // Hide 'Other' if count is zero
-            .map(cat => ({
-                category: cat,
-                count: categoryCounts[cat].count,
-                icon: categoryCounts[cat].icon,
-            }));
+        // was: Object.keys(categoryCounts).filter(...).map(...)
+const finalCategories = Object.keys(categoryCounts).map(cat => ({
+    category: cat,
+    count: categoryCounts[cat].count,
+    icon: categoryCounts[cat].icon,
+    color: categoryCounts[cat].color,
+}));
 
         // Avg response time for resolved issues
         const resolvedWithDates = allComplaints.filter(
@@ -362,15 +367,25 @@ const Dashboard = () => {
                             </div>
                             <p className="panel-subtitle">Current active issues by type</p>
                             <div className="categories-list">
-                                {issueCategories.map((item, index) => (
-                                    <div key={index} className="category-item">
-                                        <div className="category-icon-title">
-                                            <span className="category-icon">{item.icon}</span>
-                                            <span className="category-title">{item.category}</span>
-                                        </div>
-                                        <span className="category-count">{item.count}</span>
-                                    </div>
-                                ))}
+                            {issueCategories.map((item, index) => (
+    <div key={index} className="category-item">
+        <div className="category-icon-title">
+            <span
+                className="category-icon"
+                style={{ backgroundColor: item.color }}
+            >
+                {item.icon}
+            </span>
+            <span className="category-title">{item.category}</span>
+        </div>
+        <span
+            className="category-count"
+            style={{ backgroundColor: item.color }}
+        >
+            {item.count}
+        </span>
+    </div>
+))}
                             </div>
                         </div>
 

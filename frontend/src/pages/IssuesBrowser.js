@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import { Search, Filter, MapPin, ArrowRight, BarChart3, Users, FileText, PlusCircle, Heart, MessageSquare, Eye, Clock, ChevronsDown, ThumbsDown, Edit, Save } from 'lucide-react';
+import { Search, Filter, MapPin, ArrowRight, BarChart3, Users, FileText, PlusCircle, Heart, ChevronsDown, ThumbsDown, Save } from 'lucide-react';
 import './IssuesBrowser.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -66,22 +66,57 @@ const UserBrowseIssue = () => {
         'Newest First', 'Oldest First', 'Most Voted', 'Most Viewed', 'Priority'
     ], []);
 
-    const issueCategories = useMemo(() => [
-        { category: 'Garbage & Waste', count: 0, icon: '🗑️', color: '#E53E3E' },
-        { category: 'Potholes', count: 0, icon: '🕳️', color: '#DD6B20' },
-        { category: 'Water Issues', count: 0, icon: '💧', color: '#3182CE' },
-        { category: 'Street Lights', count: 0, icon: '💡', color: '#D69E2E' },
-        { category: 'Vandalism', count: 0, icon: '🎨', color: '#805AD5' },
-        { category: 'Other', count: 0, icon: '📋', color: '#718096' },
-    ], []);
+    // Static category metadata (icon + colour) — counts are computed dynamically below
+    const categoryMeta = useMemo(() => ({
+        'Garbage & Waste': { icon: '🗑️', color: '#E53E3E' },
+        'Potholes':        { icon: '🕳️', color: '#DD6B20' },
+        'Water Issues':    { icon: '💧', color: '#3182CE' },
+        'Street Lights':   { icon: '💡', color: '#D69E2E' },
+        'Vandalism':       { icon: '🎨', color: '#805AD5' },
+        'Other':           { icon: '📋', color: '#718096' },
+    }), []);
 
-    const communityImpact = {
-        issuesResolved: '0',
-        responseTime: '2 days avg',
-        communityScore: '%',
-        activeUsers: '1',
-        totalReports: '2'
-    };
+    // ── Dynamic issueCategories: live counts from the fetched issues ──
+    const issueCategories = useMemo(() =>
+        Object.entries(categoryMeta).map(([category, meta]) => ({
+            category,
+            count: issues.filter(i => i.category === category).length,
+            ...meta,
+        })),
+    [issues, categoryMeta]);
+
+    // ── Dynamic communityImpact: calculated from fetched issues ──
+    const communityImpact = useMemo(() => {
+        const total = issues.length;
+        const resolved = issues.filter(i => i.status === 'Resolved').length;
+
+        const communityScore = total > 0
+            ? `${Math.round((resolved / total) * 100)}%`
+            : 'N/A';
+
+        const resolvedWithDates = issues.filter(
+            i => i.status === 'Resolved' && i.createdAt && i.updatedAt
+        );
+        let responseTime = 'N/A';
+        if (resolvedWithDates.length > 0) {
+            const totalMs = resolvedWithDates.reduce(
+                (sum, i) => sum + (new Date(i.updatedAt) - new Date(i.createdAt)), 0
+            );
+            const avgDays = totalMs / resolvedWithDates.length / (1000 * 60 * 60 * 24);
+            responseTime = avgDays < 1
+                ? `${Math.round(avgDays * 24)} hrs avg`
+                : `${avgDays.toFixed(1)} days avg`;
+        }
+
+        return {
+            issuesResolved: String(resolved),
+            responseTime,
+            communityScore,
+            // Count unique citizens by their _id (not display name, avoids collisions)
+            activeUsers: String(new Set(issues.map(i => i.citizenId).filter(Boolean)).size),
+            totalReports: String(total),
+        };
+    }, [issues]);
 
     const fetchIssues = useCallback(async () => {
         if (!user) return;
@@ -118,6 +153,11 @@ const UserBrowseIssue = () => {
                 };
                 const displayCategory = reverseCategoryMap[comp.assignedTo] || 'Other';
 
+                // Extract the raw citizen ID — handles both populated object and plain string
+                const citizenId = typeof comp.userId === 'object'
+                    ? (comp.userId?._id || '')
+                    : (comp.userId || '');
+
                 return {
                     id: comp._id,
                     title: comp.title,
@@ -128,12 +168,14 @@ const UserBrowseIssue = () => {
                     isRejected: comp.isRejected || false,
                     rejectionNote: comp.rejectionNote || '',
                     createdAt: comp.createdAt,
+                    updatedAt: comp.updatedAt,   // needed for avg response time
                     votes: 0,
                     comments: comp.comments?.length || 0,
                     views: Math.floor(Math.random() * 200),
                     priority: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)],
                     urgency: 'Community Concern',
                     user: userName,
+                    citizenId,                  // raw _id used for unique-citizen count
                     userAvatar: getUserInitials(userName),
                     counts: { upvote: 0, downVote: 0 }
                 };
@@ -432,6 +474,8 @@ const UserBrowseIssue = () => {
 
                 <div className="browse-issues-main">
                     <div className="browse-sidebar">
+
+                        {/* ── Issue Categories (now dynamic, same as Dashboard) ── */}
                         <div className="sidebar-panel">
                             <div className="panel-header">
                                 <BarChart3 size={20} className="panel-icon" />
@@ -450,7 +494,7 @@ const UserBrowseIssue = () => {
                                             <span className="category-title">{item.category}</span>
                                         </div>
                                         <span className="category-count" style={{ backgroundColor: item.color }}>
-                                            {issues.filter(i => i.category === item.category).length}
+                                            {item.count}
                                         </span>
                                     </div>
                                 ))}
@@ -466,6 +510,7 @@ const UserBrowseIssue = () => {
                             </div>
                         </div>
 
+                        {/* ── Community Impact (now dynamic, same as Dashboard) ── */}
                         <div className="sidebar-panel">
                             <div className="panel-header">
                                 <Users size={20} className="panel-icon" />
@@ -474,15 +519,24 @@ const UserBrowseIssue = () => {
                             <div className="impact-stats">
                                 <div className="impact-stat-item">
                                     <div className="impact-icon">✅</div>
-                                    <div className="impact-content"><strong>{communityImpact.issuesResolved}</strong><span>Issues Resolved</span></div>
+                                    <div className="impact-content">
+                                        <strong>{communityImpact.issuesResolved}</strong>
+                                        <span>Issues Resolved</span>
+                                    </div>
                                 </div>
                                 <div className="impact-stat-item">
                                     <div className="impact-icon">⚡</div>
-                                    <div className="impact-content"><strong>{communityImpact.responseTime}</strong><span>Avg Response Time</span></div>
+                                    <div className="impact-content">
+                                        <strong>{communityImpact.responseTime}</strong>
+                                        <span>Avg Response Time</span>
+                                    </div>
                                 </div>
                                 <div className="impact-stat-item">
                                     <div className="impact-icon">⭐</div>
-                                    <div className="impact-content"><strong>{communityImpact.communityScore}</strong><span>Community Score</span></div>
+                                    <div className="impact-content">
+                                        <strong>{communityImpact.communityScore}</strong>
+                                        <span>Community Score</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -590,7 +644,6 @@ const UserBrowseIssue = () => {
                                         {filteredIssues.map(issue => (
                                             <div key={issue.id} className={`issue-card ${issue.isRejected ? 'issue-card-rejected' : ''}`}>
 
-                                                {/* ── REJECTED BANNER ── shown to all citizens */}
                                                 {issue.isRejected && (
                                                     <div className="issue-rejected-banner">
                                                         <span className="rejected-x">✕</span>
@@ -608,8 +661,8 @@ const UserBrowseIssue = () => {
                                                         <div
                                                             className="issue-category-tag"
                                                             style={{
-                                                                backgroundColor: issueCategories.find(c => c.category === issue.category)?.color + '20',
-                                                                color: issueCategories.find(c => c.category === issue.category)?.color
+                                                                backgroundColor: (categoryMeta[issue.category]?.color || '#718096') + '20',
+                                                                color: categoryMeta[issue.category]?.color || '#718096'
                                                             }}
                                                         >
                                                             {issue.category}
@@ -627,7 +680,7 @@ const UserBrowseIssue = () => {
 
                                                 <div className="issue-meta">
                                                     <div className="meta-item"><MapPin size={16} /><span>{issue.location}</span></div>
-                                                    <div className="meta-item"><Clock size={16} /><span>{getRelativeTime(issue.createdAt)}</span></div>
+                                                    <div className="meta-item"><span>{getRelativeTime(issue.createdAt)}</span></div>
                                                 </div>
 
                                                 <div className="issue-footer">
@@ -642,7 +695,6 @@ const UserBrowseIssue = () => {
 
                                                 <div className="issue-actions">
                                                     <div className="vote-section">
-                                                        {/* Upvote — disabled if rejected */}
                                                         <button
                                                             className={`vote-btn upvote ${userVotes[issue.id] === 'upvote' ? 'voted' : ''}`}
                                                             onClick={() => !issue.isRejected && handleVote(issue.id, 'upvote')}
@@ -652,7 +704,6 @@ const UserBrowseIssue = () => {
                                                             <Heart size={16} />
                                                             <span>{issue.counts?.upvote || 0}</span>
                                                         </button>
-                                                        {/* Downvote — disabled if rejected */}
                                                         <button
                                                             className={`vote-btn downvote ${userVotes[issue.id] === 'downvote' ? 'voted' : ''}`}
                                                             onClick={() => !issue.isRejected && handleVote(issue.id, 'downvote')}
@@ -669,7 +720,6 @@ const UserBrowseIssue = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Comments toggle — hidden if rejected */}
                                                 {!issue.isRejected && (
                                                     <div className="comments-toggle">
                                                         <button className="comments-open-btn" onClick={() => toggleComments(issue.id)}>
@@ -678,7 +728,6 @@ const UserBrowseIssue = () => {
                                                     </div>
                                                 )}
 
-                                                {/* Comments panel — hidden if rejected */}
                                                 {!issue.isRejected && commentsOpen[issue.id] && (
                                                     <div className="comments-panel">
                                                         <div className="add-comment">
@@ -727,6 +776,7 @@ const UserBrowseIssue = () => {
                                                                                     </span>
                                                                                     {isOwner && (
                                                                                         <div className="comment-owner-actions">
+                                                                                            <button className="edit-comment-btn" onClick={() => startEditComment(c)}>✏️</button>
                                                                                             <button className="delete-comment-btn" onClick={() => deleteComment(issue.id, c._id)}>🗑️</button>
                                                                                         </div>
                                                                                     )}
