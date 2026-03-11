@@ -590,3 +590,65 @@
         justify-content: center;
     }
 }
+/* ── Admin-style stat cards (add these to your Dashboard.css) ──────────────
+   These classes are used by the new 5-card stats row on the Dashboard page.
+   They mirror the exact styles from AdminAllIssues.css.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Override the grid to allow 5 columns */
+.dashboard-stats-row {
+    display: grid;
+    gap: 16px;
+    padding: 24px 32px 0;
+}
+
+.issues-stat-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    border: 1px solid #f1f5f9;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.issues-stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.issues-stat-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.issues-stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.issues-stat-label {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.issues-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1;
+}
+
+.issues-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}

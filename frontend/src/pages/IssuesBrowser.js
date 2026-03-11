@@ -69,11 +69,11 @@ const UserBrowseIssue = () => {
     // Static category metadata (icon + colour) — counts are computed dynamically below
     const categoryMeta = useMemo(() => ({
         'Garbage & Waste': { icon: '🗑️', color: '#E53E3E' },
-        'Potholes':        { icon: '🕳️', color: '#DD6B20' },
-        'Water Issues':    { icon: '💧', color: '#3182CE' },
-        'Street Lights':   { icon: '💡', color: '#D69E2E' },
-        'Vandalism':       { icon: '🎨', color: '#805AD5' },
-        'Other':           { icon: '📋', color: '#718096' },
+        'Potholes': { icon: '🕳️', color: '#DD6B20' },
+        'Water Issues': { icon: '💧', color: '#3182CE' },
+        'Street Lights': { icon: '💡', color: '#D69E2E' },
+        'Vandalism': { icon: '🎨', color: '#805AD5' },
+        'Other': { icon: '📋', color: '#718096' },
     }), []);
 
     // ── Dynamic issueCategories: live counts from the fetched issues ──
@@ -83,7 +83,7 @@ const UserBrowseIssue = () => {
             count: issues.filter(i => i.category === category).length,
             ...meta,
         })),
-    [issues, categoryMeta]);
+        [issues, categoryMeta]);
 
     // ── Dynamic communityImpact: calculated from fetched issues ──
     const communityImpact = useMemo(() => {
@@ -138,8 +138,8 @@ const UserBrowseIssue = () => {
             const fetchedIssues = response.data.data.map(comp => {
                 const statusText = comp.status === 'recived' ? 'Pending'
                     : comp.status === 'inReview' ? 'In Progress'
-                    : comp.status === 'resolved' ? 'Resolved'
-                    : 'Pending';
+                        : comp.status === 'resolved' ? 'Resolved'
+                            : 'Pending';
                 const locationText = comp.address?.[0] || 'Unknown Location';
                 const userName = typeof comp.userId === 'object' && comp.userId?.name
                     ? comp.userId.name
@@ -410,7 +410,7 @@ const UserBrowseIssue = () => {
 
     const handleLogout = () => {
         axios.post(`${API_BASE_URL}/users/logout`, {}, { withCredentials: true })
-            .catch(() => {})
+            .catch(() => { })
             .finally(() => { signOut(); navigate('/'); });
     };
 

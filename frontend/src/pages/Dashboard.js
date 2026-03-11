@@ -2,90 +2,50 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import { PlusCircle, MapPin, FileText, ArrowRight, BarChart3, Users, Mail, Phone, Globe, Trash2, Lightbulb, Droplet, Wrench } from 'lucide-react';
+import { PlusCircle, MapPin, FileText, ArrowRight, BarChart3, Users, Mail, Phone, Globe, AlertCircle, Clock, CheckCircle, X } from 'lucide-react';
 import './Dashboard.css';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API_BASE_URL =  `${BACKEND_URL}/api/v1`; // Use the base URL for consistency
+const API_BASE_URL = `${BACKEND_URL}/api/v1`;
 
-// --- Utility Functions (Reusing/Adapting logic from IssuesBrowser) ---
-
-// Utility to calculate time difference in a user-friendly way
 const getRelativeTime = (isoDateString) => {
     const reportDate = new Date(isoDateString);
     const now = new Date();
     const diffMs = now.getTime() - reportDate.getTime();
-    
-    // Convert to minutes
     const diffMinutes = Math.round(diffMs / (1000 * 60));
-
-    if (diffMinutes < 60) {
-        return diffMinutes <= 1 ? 'Just now' : `${diffMinutes} minutes ago`;
-    }
-
-    // Convert to hours
+    if (diffMinutes < 60) return diffMinutes <= 1 ? 'Just now' : `${diffMinutes} minutes ago`;
     const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-    if (diffHours < 24) {
-        return `${diffHours} hours ago`;
-    }
-
-    // Convert to days, checking for calendar day difference
+    if (diffHours < 24) return `${diffHours} hours ago`;
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfReportDay = new Date(reportDate.getFullYear(), reportDate.getMonth(), reportDate.getDate());
     const diffDays = Math.floor((startOfToday.getTime() - startOfReportDay.getTime()) / (1000 * 60 * 60 * 24));
-
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
     return `${Math.floor(diffDays / 30)} months ago`;
 };
 
-
-// Map server categories to display categories
-const mapServerCategory = (serverAssignedTo) => {
-    const reverseCategoryMap = {
-        'Municipal sanitation and public health': 'Garbage & Waste',
-        'Roads and street infrastructure': 'Potholes',
-        'Street lighting and electrical assets': 'Street Lights',
-        'Water, sewerage, and stormwater': 'Water Issues',
-        'Ward/zone office and central admin': 'Vandalism'
-    };
-    return reverseCategoryMap[serverAssignedTo] || 'Other';
-};
-
-// Map display categories to icons
-const getCategoryIcon = (category) => {
-    switch (category) {
-        case 'Garbage & Waste': return <Trash2 size={24} />;
-        case 'Potholes': return <Wrench size={24} />;
-        case 'Water Issues': return <Droplet size={24} />;
-        case 'Street Lights': return <Lightbulb size={24} />;
-        default: return <FileText size={24} />;
-    }
-};
-
 const Dashboard = () => {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
-    
-    // Renamed state to hold ALL fetched complaints for dashboard aggregation
+
     const [allComplaints, setAllComplaints] = useState([]);
     const [loading, setLoading] = useState(true);
     const [, setError] = useState(null);
-    
-    // State to handle initial authentication check
     const [authChecked, setAuthChecked] = useState(false);
 
-    // --- Dynamic Dashboard Data Calculation using useMemo ---
-    
-    // 1. Complaint Aggregation and Recent Reports
-    const { totalReports, activeIssues, resolvedIssues, pendingIssues, avgResponseTime, communityScore, recentReports, issueCategories } = useMemo(() => {
-        console.log("useMemo running, count =", allComplaints.length); // ← ADD THIS LINE
+    const {
+        totalReports, pendingIssues, inProgressIssues, resolvedIssues, rejectedIssues,
+        avgResponseTime, communityScore, recentReports, issueCategories
+    } = useMemo(() => {
         let totals = {
             totalReports: allComplaints.length,
-            activeIssues: 0,
-            resolvedIssues: 0,
             pendingIssues: 0,
+            inProgressIssues: 0,
+            resolvedIssues: 0,
+            rejectedIssues: 0,
         };
+
         const categoryCounts = {
             'Garbage & Waste': { count: 0, icon: '🗑️', color: '#E53E3E' },
             'Potholes':        { count: 0, icon: '🕳️', color: '#DD6B20' },
@@ -95,63 +55,70 @@ const Dashboard = () => {
             'Other':           { count: 0, icon: '📋', color: '#718096' },
         };
 
+        const reverseCategoryMap = {
+            'Municipal sanitation and public health': 'Garbage & Waste',
+            'Roads and street infrastructure': 'Potholes',
+            'Street lighting and electrical assets': 'Street Lights',
+            'Water, sewerage, and stormwater': 'Water Issues',
+            'Ward/zone office and central admin': 'Vandalism',
+        };
+
         allComplaints.forEach(comp => {
             const status = (comp.status || '').toLowerCase().trim();
-            if (status === 'resolved') { totals.resolvedIssues++; }
-            else if (status === 'recived' || status === 'received') { totals.pendingIssues++; totals.activeIssues++; }
-            else if (status === 'inreview' || status === 'in review') { totals.activeIssues++; }
-        
-            // ← ADD THIS:
-            const reverseCategoryMap = {
-                'Municipal sanitation and public health': 'Garbage & Waste',
-                'Roads and street infrastructure': 'Potholes',
-                'Street lighting and electrical assets': 'Street Lights',
-                'Water, sewerage, and stormwater': 'Water Issues',
-                'Ward/zone office and central admin': 'Vandalism',
-            };
+            const isRejected = comp.isRejected || false;
+
+            if (isRejected) {
+                totals.rejectedIssues++;
+            } else if (status === 'resolved') {
+                totals.resolvedIssues++;
+            } else if (status === 'recived' || status === 'received') {
+                totals.pendingIssues++;
+            } else if (status === 'inreview' || status === 'in review' || status === 'in progress') {
+                totals.inProgressIssues++;
+            } else {
+                totals.pendingIssues++;
+            }
+
             const cat = reverseCategoryMap[comp.assignedTo] || 'Other';
             if (categoryCounts[cat]) categoryCounts[cat].count++;
         });
 
-        // Get the top 3 recent reports (sorted by creation time)
+        const finalCategories = Object.keys(categoryCounts).map(cat => ({
+            category: cat,
+            count: categoryCounts[cat].count,
+            icon: categoryCounts[cat].icon,
+            color: categoryCounts[cat].color,
+        }));
+
         const sortedReports = [...allComplaints]
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0, 3);
 
         const mappedRecentReports = sortedReports.map(comp => ({
             title: comp.title,
-            // Use the first address entry or fallback
-            location: comp.address?.[0] || 'Unknown Location', 
-            // Mock data for now, actual votes should come from backend aggregation
-            votes: comp.mockVotes || Math.floor(Math.random() * 30), 
+            location: comp.address?.[0] || 'Unknown Location',
+            votes: comp.mockVotes || Math.floor(Math.random() * 30),
             time: getRelativeTime(comp.createdAt),
-            status: comp.status === 'recived' ? 'Pending' : comp.status === 'inReview' ? 'In Progress' : comp.status === 'resolved' ? 'Resolved' : 'Pending',
+            status: comp.status === 'recived' ? 'Pending'
+                : comp.status === 'inReview' ? 'In Progress'
+                : comp.status === 'resolved' ? 'Resolved'
+                : 'Pending',
         }));
-        
-        // Convert category map back to array format for rendering
-        // was: Object.keys(categoryCounts).filter(...).map(...)
-const finalCategories = Object.keys(categoryCounts).map(cat => ({
-    category: cat,
-    count: categoryCounts[cat].count,
-    icon: categoryCounts[cat].icon,
-    color: categoryCounts[cat].color,
-}));
 
-        // Avg response time for resolved issues
         const resolvedWithDates = allComplaints.filter(
             c => (c.status || '').toLowerCase() === 'resolved' && c.createdAt && c.updatedAt
         );
         let avgResponseTime = 'N/A';
         if (resolvedWithDates.length > 0) {
-            const totalMs = resolvedWithDates.reduce((sum, c) =>
-                sum + (new Date(c.updatedAt) - new Date(c.createdAt)), 0);
+            const totalMs = resolvedWithDates.reduce(
+                (sum, c) => sum + (new Date(c.updatedAt) - new Date(c.createdAt)), 0
+            );
             const avgDays = totalMs / resolvedWithDates.length / (1000 * 60 * 60 * 24);
             avgResponseTime = avgDays < 1
                 ? `${Math.round(avgDays * 24)} hrs avg`
                 : `${avgDays.toFixed(1)} days avg`;
         }
 
-        // Community score = resolved / total as %
         const communityScore = totals.totalReports > 0
             ? `${Math.round((totals.resolvedIssues / totals.totalReports) * 100)}%`
             : 'N/A';
@@ -164,51 +131,23 @@ const finalCategories = Object.keys(categoryCounts).map(cat => ({
             issueCategories: finalCategories,
         };
     }, [allComplaints]);
-    
-    
-    // --- API Fetch Function ---
-    const fetchComplaints = useCallback(async () => {
-        if (!user) return; // Should already be guarded by the useEffect below
 
+    const fetchComplaints = useCallback(async () => {
+        if (!user) return;
         setLoading(true);
         try {
-            const res = await axios.get(`${API_BASE_URL}/complaints/all`, {
-                withCredentials: true,
-            });
-
-            // Log raw shape so we can debug extraction
-            console.log('RAW API response keys:', Object.keys(res.data || {}));
-            console.log('RAW res.data (first 300 chars):', JSON.stringify(res.data).slice(0, 300));
-
-            // Safely extract array — handles every common envelope shape
+            const res = await axios.get(`${API_BASE_URL}/complaints/all`, { withCredentials: true });
             const raw = res.data;
             let complaints = [];
-            if (Array.isArray(raw)) {
-                complaints = raw;
-            } else if (Array.isArray(raw?.data)) {
-                complaints = raw.data;
-            } else if (Array.isArray(raw?.data?.data)) {
-                complaints = raw.data.data;
-            } else if (Array.isArray(raw?.complaints)) {
-                complaints = raw.complaints;
-            } else if (Array.isArray(raw?.result)) {
-                complaints = raw.result;
-            } else {
-                // Last resort: find the first array value in the response object
+            if (Array.isArray(raw)) complaints = raw;
+            else if (Array.isArray(raw?.data)) complaints = raw.data;
+            else if (Array.isArray(raw?.data?.data)) complaints = raw.data.data;
+            else if (Array.isArray(raw?.complaints)) complaints = raw.complaints;
+            else if (Array.isArray(raw?.result)) complaints = raw.result;
+            else {
                 const firstArray = Object.values(raw || {}).find(v => Array.isArray(v));
                 if (firstArray) complaints = firstArray;
             }
-
-            console.log(`✅ Extracted ${complaints.length} complaints`);
-            if (complaints.length > 0) {
-                console.log('First complaint:', complaints[0]);
-                const statusBreakdown = complaints.reduce((acc, c) => {
-                    acc[c.status] = (acc[c.status] || 0) + 1;
-                    return acc;
-                }, {});
-                console.log('Status breakdown:', statusBreakdown);
-            }
-
             setAllComplaints(complaints);
         } catch (err) {
             console.error("Failed to fetch complaints:", err.response?.data || err.message);
@@ -218,44 +157,26 @@ const finalCategories = Object.keys(categoryCounts).map(cat => ({
         }
     }, [user]);
 
-    // --- Authentication and Data Fetch Effects ---
-
-    // 1. Initial Auth Check (to prevent flash of unauthenticated content)
     useEffect(() => {
-        // Assume AuthContext performs the actual token check/user loading.
-        // We simulate the check completion here.
-        setAuthChecked(true); 
+        setAuthChecked(true);
     }, []);
 
-    // 2. Data Fetch
     useEffect(() => {
-        if (authChecked && user) {
-            fetchComplaints();
-        } else if (authChecked && !user) {
-             // If auth check is complete and no user, redirect to login
-             navigate('/login');
-        }
+        if (authChecked && user) fetchComplaints();
+        else if (authChecked && !user) navigate('/login');
     }, [user, authChecked, navigate, fetchComplaints]);
-
 
     const handleLogout = () => {
         axios.post(`${API_BASE_URL}/users/logout`, {}, { withCredentials: true })
             .catch(() => {})
-            .finally(() => {
-                signOut();
-                navigate('/');
-            });
+            .finally(() => { signOut(); navigate('/'); });
     };
 
     const getUserInitials = (name) => {
         if (!name) return 'JD';
-        const nameParts = name.split(' ');
-        const initials = nameParts.map(part => part[0]).join('');
-        return initials.toUpperCase();
+        return name.split(' ').map(part => part[0]).join('').toUpperCase();
     };
 
-    // --- Conditional Rendering ---
-    
     if (!authChecked || loading) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '10px' }}>
@@ -264,18 +185,21 @@ const finalCategories = Object.keys(categoryCounts).map(cat => ({
             </div>
         );
     }
-    
-    if (!user) {
-        // This case should primarily be handled by the useEffect redirect, but remains as a guard
-        return null;
-    }
 
+    if (!user) return null;
+
+    const statCards = [
+        { label: 'Total Issues',  value: totalReports,     icon: BarChart3,   bg: '#e5e7eb' },
+        { label: 'Pending',       value: pendingIssues,    icon: AlertCircle, bg: '#ffedd5' },
+        { label: 'In Progress',   value: inProgressIssues, icon: Clock,       bg: '#dbeafe' },
+        { label: 'Resolved',      value: resolvedIssues,   icon: CheckCircle, bg: '#dcfce7' },
+        { label: 'Rejected',      value: rejectedIssues,   icon: X,           bg: '#fff1f2' },
+    ];
 
     return (
         <>
             <header className="header-top">
                 <div className="logo-section">
-                    
                     <div className="logo-text">CivicEye</div>
                 </div>
                 <nav className="nav-links">
@@ -305,105 +229,78 @@ const finalCategories = Object.keys(categoryCounts).map(cat => ({
                                 Report A New Issue
                             </Link>
                             <Link to="/browse-issues" className="hero-btn-secondary inline-flex items-center gap-2">
-                            Browse Issues
+                                Browse Issues
                             </Link>
                         </div>
                     </div>
                 </div>
 
-                <div className="dashboard-stats-row">
-                    <div className="stat-card total-reports-card">
-                        {/* FIX: Use a flex container to align text and icon */}
-                        <div className="stat-content-wrapper">
-                            <div className="stat-info-text">
-                                <h3 className="stat-value">{totalReports}</h3>
-                                <p className="stat-label">Total Reports</p>
-                            </div>
-                            <div className="stat-icon-container">
-                                <span className="stat-icon">📈</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="stat-card active-issues-card">
-                        <div className="stat-content-wrapper">
-                            <div className="stat-info-text">
-                                <h3 className="stat-value">{activeIssues}</h3>
-                                <p className="stat-label">Active Issues</p>
-                            </div>
-                            <div className="stat-icon-container">
-                                <span className="stat-icon">🔥</span>
+                {/* ── 5 Admin-style Stat Cards ── */}
+                <div className="dashboard-stats-row" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+                    {statCards.map(({ label, value, icon: Icon, bg }) => (
+                        <div key={label} className="issues-stat-card">
+                            <div className="issues-stat-content">
+                                <div className="issues-stat-info">
+                                    <div className="issues-stat-label">{label}</div>
+                                    <div className="issues-stat-value">{value}</div>
+                                </div>
+                                <div className="issues-stat-icon" style={{ backgroundColor: bg }}>
+                                    <Icon size={24} color="#6b7280" />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div className="stat-card resolved-card">
-                        <div className="stat-content-wrapper">
-                            <div className="stat-info-text">
-                                <h3 className="stat-value">{resolvedIssues}</h3>
-                                <p className="stat-label">Resolved Issues</p>
-                            </div>
-                            <div className="stat-icon-container">
-                                <span className="stat-icon">✅</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="stat-card pending-card">
-                        <div className="stat-content-wrapper">
-                            <div className="stat-info-text">
-                                <h3 className="stat-value">{pendingIssues}</h3>
-                                <p className="stat-label">Pending Issues</p>
-                            </div>
-                            <div className="stat-icon-container">
-                                <span className="stat-icon">⏳</span>
-                            </div>
-                        </div>
-                    </div>
+                    ))}
                 </div>
-                
+
                 <div className="dashboard-main">
                     <aside className="dashboard-sidebar-panels">
+                        {/* Issue Categories */}
                         <div className="panel issue-categories-panel">
                             <div className="panel-header">
                                 <h3><BarChart3 size={20} /> Issue Categories</h3>
                             </div>
                             <p className="panel-subtitle">Current active issues by type</p>
                             <div className="categories-list">
-                            {issueCategories.map((item, index) => (
-    <div key={index} className="category-item">
-        <div className="category-icon-title">
-            <span
-                className="category-icon"
-                style={{ backgroundColor: item.color }}
-            >
-                {item.icon}
-            </span>
-            <span className="category-title">{item.category}</span>
-        </div>
-        <span
-            className="category-count"
-            style={{ backgroundColor: item.color }}
-        >
-            {item.count}
-        </span>
-    </div>
-))}
+                                {issueCategories.map((item, index) => (
+                                    <div key={index} className="category-item">
+                                        <div className="category-icon-title">
+                                            <span className="category-icon" style={{ backgroundColor: item.color }}>
+                                                {item.icon}
+                                            </span>
+                                            <span className="category-title">{item.category}</span>
+                                        </div>
+                                        <span className="category-count" style={{ backgroundColor: item.color }}>
+                                            {item.count}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
+                        {/* Community Impact */}
                         <div className="panel community-impact-panel">
                             <h3><Users size={20} /> Community Impact</h3>
                             <div className="impact-stats">
                                 <div className="impact-stat-item">
-                                    <span>Issues Resolved</span>
-                                    {/* Using resolvedIssues count for dynamic data */}
-                                    <strong>{resolvedIssues} <small>total</small></strong>
+                                    <div className="impact-icon">✅</div>
+                                    <div className="impact-content">
+                                        <strong>{resolvedIssues} <small>total</small></strong>
+                                        <span>Issues Resolved</span>
+                                    </div>
                                 </div>
                                 <div className="impact-stat-item">
-                                    <span>Response Time</span>
-                                    <strong>{avgResponseTime}</strong>
+                                    <div className="impact-icon">⚡</div>
+                                    <div className="impact-content">
+                                        <strong>{avgResponseTime}</strong>
+                                        <span>Response Time</span>
+                                    </div>
                                 </div>
                                 <div className="impact-stat-item">
-                                    <span>Community Score</span>
-                                    <strong>{communityScore}</strong>
+                                    <div className="impact-icon">⭐</div>
+                                    <div className="impact-content">
+                                        <strong>{communityScore}</strong>
+                                        <span>Community Score</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -465,7 +362,6 @@ const finalCategories = Object.keys(categoryCounts).map(cat => ({
             <footer className="footer">
                 <div className="footer-column footer-logo-section">
                     <div className="logo-section">
-                        
                         <div className="logo-text">CivicEye</div>
                     </div>
                     <p className="footer-tagline">Civic Engagement Platform</p>
