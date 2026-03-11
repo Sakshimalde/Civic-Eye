@@ -258,6 +258,8 @@ const UserReportIssue = () => {
         submitData.append('assignedTo', assignedToDepartment);
         submitData.append('locationCoords', JSON.stringify([selectedLocation.lng, selectedLocation.lat]));
         submitData.append('complaintPhoto', formData.photo);
+        // Add this line with the other submitData.append calls
+submitData.append('priority', formData.priority);
 
         try {
             await axios.post(`${API_BASE_URL}/complaints/register`, submitData, { withCredentials: true });

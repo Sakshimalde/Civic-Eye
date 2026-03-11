@@ -32,6 +32,14 @@ const getUserInitials = (name) => {
     return name.split(' ').map(part => part[0]).join('').toUpperCase();
 };
 
+// ── Priority derived from complaint age (no backend field needed) ──────────
+const getPriority = (createdAt) => {
+    const days = (Date.now() - new Date(createdAt)) / (1000 * 60 * 60 * 24);
+    if (days > 14) return 'high';
+    if (days > 7)  return 'medium';
+    return 'low';
+};
+
 const UserBrowseIssue = () => {
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
@@ -83,11 +91,9 @@ const UserBrowseIssue = () => {
         })),
     [issues, categoryMeta]);
 
-    // ── Fix: exclude rejected issues from resolved count ──
     const communityImpact = useMemo(() => {
         const total = issues.length;
 
-        // Only count as resolved if NOT rejected AND status is 'Resolved'
         const resolved = issues.filter(i => !i.isRejected && i.status === 'Resolved').length;
 
         const communityScore = total > 0
@@ -170,7 +176,7 @@ const UserBrowseIssue = () => {
                     votes: 0,
                     comments: comp.comments?.length || 0,
                     views: Math.floor(Math.random() * 200),
-                    priority: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)],
+                    priority: comp.priority || 'low',
                     urgency: 'Community Concern',
                     user: userName,
                     citizenId,

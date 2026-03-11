@@ -22,6 +22,12 @@ const complaintSchema = new mongoose.Schema({
     photo: {
         type: String,
     },
+    
+    priority: {
+        type: String,
+        enum: ['low', 'medium', 'high'],
+        default: 'low'
+    },
 
     // ✅ Volunteer's proof photo submitted when marking resolved — kept separate from original complaint photo
     proofPhoto: {

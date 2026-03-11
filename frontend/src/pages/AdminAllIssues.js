@@ -354,7 +354,7 @@ const AllIssuesAdmin = () => {
                     isRejected: comp.isRejected || false,
                     rejectionNote: comp.rejectionNote || '',
                     statusLabel: comp.isRejected ? 'Rejected' : mapStatus(comp.status),
-                    priority: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)],
+                    priority: comp.priority || 'low',
                     assignedTo: assignedToName,
                     reportedBy: comp.userId?.name || 'Anonymous',
                     date: new Date(comp.createdAt).toLocaleDateString('en-IN'),
@@ -550,7 +550,7 @@ const AllIssuesAdmin = () => {
                                             >
                                                 <td className="issue-title-cell">
                                                     {issue.title}
-                                                    {issue.isRejected && <span className="rejected-inline-badge">Rejected</span>}
+                                                    {issue.isRejected && <span className="rejected-inline-badge"></span>}
                                                 </td>
                                                 <td>
                                                     <span className="status-badge"
