@@ -66,36 +66,36 @@ const UserBrowseIssue = () => {
         'Newest First', 'Oldest First', 'Most Voted', 'Most Viewed', 'Priority'
     ], []);
 
-    // Static category metadata (icon + colour) — counts are computed dynamically below
     const categoryMeta = useMemo(() => ({
         'Garbage & Waste': { icon: '🗑️', color: '#E53E3E' },
-        'Potholes': { icon: '🕳️', color: '#DD6B20' },
-        'Water Issues': { icon: '💧', color: '#3182CE' },
-        'Street Lights': { icon: '💡', color: '#D69E2E' },
-        'Vandalism': { icon: '🎨', color: '#805AD5' },
-        'Other': { icon: '📋', color: '#718096' },
+        'Potholes':        { icon: '🕳️', color: '#DD6B20' },
+        'Water Issues':    { icon: '💧', color: '#3182CE' },
+        'Street Lights':   { icon: '💡', color: '#D69E2E' },
+        'Vandalism':       { icon: '🎨', color: '#805AD5' },
+        'Other':           { icon: '📋', color: '#718096' },
     }), []);
 
-    // ── Dynamic issueCategories: live counts from the fetched issues ──
     const issueCategories = useMemo(() =>
         Object.entries(categoryMeta).map(([category, meta]) => ({
             category,
             count: issues.filter(i => i.category === category).length,
             ...meta,
         })),
-        [issues, categoryMeta]);
+    [issues, categoryMeta]);
 
-    // ── Dynamic communityImpact: calculated from fetched issues ──
+    // ── Fix: exclude rejected issues from resolved count ──
     const communityImpact = useMemo(() => {
         const total = issues.length;
-        const resolved = issues.filter(i => i.status === 'Resolved').length;
+
+        // Only count as resolved if NOT rejected AND status is 'Resolved'
+        const resolved = issues.filter(i => !i.isRejected && i.status === 'Resolved').length;
 
         const communityScore = total > 0
             ? `${Math.round((resolved / total) * 100)}%`
             : 'N/A';
 
         const resolvedWithDates = issues.filter(
-            i => i.status === 'Resolved' && i.createdAt && i.updatedAt
+            i => !i.isRejected && i.status === 'Resolved' && i.createdAt && i.updatedAt
         );
         let responseTime = 'N/A';
         if (resolvedWithDates.length > 0) {
@@ -112,7 +112,6 @@ const UserBrowseIssue = () => {
             issuesResolved: String(resolved),
             responseTime,
             communityScore,
-            // Count unique citizens by their _id (not display name, avoids collisions)
             activeUsers: String(new Set(issues.map(i => i.citizenId).filter(Boolean)).size),
             totalReports: String(total),
         };
@@ -138,8 +137,8 @@ const UserBrowseIssue = () => {
             const fetchedIssues = response.data.data.map(comp => {
                 const statusText = comp.status === 'recived' ? 'Pending'
                     : comp.status === 'inReview' ? 'In Progress'
-                        : comp.status === 'resolved' ? 'Resolved'
-                            : 'Pending';
+                    : comp.status === 'resolved' ? 'Resolved'
+                    : 'Pending';
                 const locationText = comp.address?.[0] || 'Unknown Location';
                 const userName = typeof comp.userId === 'object' && comp.userId?.name
                     ? comp.userId.name
@@ -153,7 +152,6 @@ const UserBrowseIssue = () => {
                 };
                 const displayCategory = reverseCategoryMap[comp.assignedTo] || 'Other';
 
-                // Extract the raw citizen ID — handles both populated object and plain string
                 const citizenId = typeof comp.userId === 'object'
                     ? (comp.userId?._id || '')
                     : (comp.userId || '');
@@ -168,14 +166,14 @@ const UserBrowseIssue = () => {
                     isRejected: comp.isRejected || false,
                     rejectionNote: comp.rejectionNote || '',
                     createdAt: comp.createdAt,
-                    updatedAt: comp.updatedAt,   // needed for avg response time
+                    updatedAt: comp.updatedAt,
                     votes: 0,
                     comments: comp.comments?.length || 0,
                     views: Math.floor(Math.random() * 200),
                     priority: ['high', 'medium', 'low'][Math.floor(Math.random() * 3)],
                     urgency: 'Community Concern',
                     user: userName,
-                    citizenId,                  // raw _id used for unique-citizen count
+                    citizenId,
                     userAvatar: getUserInitials(userName),
                     counts: { upvote: 0, downVote: 0 }
                 };
@@ -410,7 +408,7 @@ const UserBrowseIssue = () => {
 
     const handleLogout = () => {
         axios.post(`${API_BASE_URL}/users/logout`, {}, { withCredentials: true })
-            .catch(() => { })
+            .catch(() => {})
             .finally(() => { signOut(); navigate('/'); });
     };
 
@@ -474,8 +472,6 @@ const UserBrowseIssue = () => {
 
                 <div className="browse-issues-main">
                     <div className="browse-sidebar">
-
-                        {/* ── Issue Categories (now dynamic, same as Dashboard) ── */}
                         <div className="sidebar-panel">
                             <div className="panel-header">
                                 <BarChart3 size={20} className="panel-icon" />
@@ -510,7 +506,6 @@ const UserBrowseIssue = () => {
                             </div>
                         </div>
 
-                        {/* ── Community Impact (now dynamic, same as Dashboard) ── */}
                         <div className="sidebar-panel">
                             <div className="panel-header">
                                 <Users size={20} className="panel-icon" />
@@ -608,7 +603,6 @@ const UserBrowseIssue = () => {
                             </div>
                         </div>
 
-                        {/* Issues List */}
                         <div className="content-panel issues-panel">
                             <div className="panel-header-main">
                                 <div className="panel-title">
