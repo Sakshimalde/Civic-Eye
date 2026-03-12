@@ -34,10 +34,7 @@ const Dashboard = () => {
     const [, setError] = useState(null);
     const [authChecked, setAuthChecked] = useState(false);
 
-    const {
-        totalReports, pendingIssues, inProgressIssues, resolvedIssues, rejectedIssues,
-        avgResponseTime, communityScore, recentReports, issueCategories
-    } = useMemo(() => {
+    const { totalReports, pendingIssues, inProgressIssues, resolvedIssues, rejectedIssues, avgResponseTime, communityScore, recentReports, issueCategories } = useMemo(() => {
         let totals = {
             totalReports: allComplaints.length,
             pendingIssues: 0,
@@ -46,6 +43,7 @@ const Dashboard = () => {
             rejectedIssues: 0,
         };
 
+        // ── Category map with emoji icons + brand colours (matches IssuesBrowser) ──
         const categoryCounts = {
             'Garbage & Waste': { count: 0, icon: '🗑️', color: '#E53E3E' },
             'Potholes':        { count: 0, icon: '🕳️', color: '#DD6B20' },
@@ -79,10 +77,12 @@ const Dashboard = () => {
                 totals.pendingIssues++;
             }
 
+            // Tally category counts
             const cat = reverseCategoryMap[comp.assignedTo] || 'Other';
             if (categoryCounts[cat]) categoryCounts[cat].count++;
         });
 
+        // Build issueCategories array
         const finalCategories = Object.keys(categoryCounts).map(cat => ({
             category: cat,
             count: categoryCounts[cat].count,
@@ -90,6 +90,7 @@ const Dashboard = () => {
             color: categoryCounts[cat].color,
         }));
 
+        // Recent reports (top 3)
         const sortedReports = [...allComplaints]
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0, 3);
@@ -105,8 +106,9 @@ const Dashboard = () => {
                 : 'Pending',
         }));
 
+        // Avg response time — exclude rejected (matches IssuesBrowser logic)
         const resolvedWithDates = allComplaints.filter(
-            c => (c.status || '').toLowerCase() === 'resolved' && c.createdAt && c.updatedAt
+            c => !c.isRejected && (c.status || '').toLowerCase() === 'resolved' && c.createdAt && c.updatedAt
         );
         let avgResponseTime = 'N/A';
         if (resolvedWithDates.length > 0) {
@@ -119,6 +121,7 @@ const Dashboard = () => {
                 : `${avgDays.toFixed(1)} days avg`;
         }
 
+        // Community score — exclude rejected from resolved count (matches IssuesBrowser logic)
         const communityScore = totals.totalReports > 0
             ? `${Math.round((totals.resolvedIssues / totals.totalReports) * 100)}%`
             : 'N/A';
@@ -129,8 +132,7 @@ const Dashboard = () => {
             communityScore,
             recentReports: mappedRecentReports,
             issueCategories: finalCategories,
-        };
-    }, [allComplaints]);
+        };    }, [allComplaints]);
 
     const fetchComplaints = useCallback(async () => {
         if (!user) return;
@@ -188,14 +190,6 @@ const Dashboard = () => {
 
     if (!user) return null;
 
-    const statCards = [
-        { label: 'Total Issues',  value: totalReports,     icon: BarChart3,   bg: '#e5e7eb' },
-        { label: 'Pending',       value: pendingIssues,    icon: AlertCircle, bg: '#ffedd5' },
-        { label: 'In Progress',   value: inProgressIssues, icon: Clock,       bg: '#dbeafe' },
-        { label: 'Resolved',      value: resolvedIssues,   icon: CheckCircle, bg: '#dcfce7' },
-        { label: 'Rejected',      value: rejectedIssues,   icon: X,           bg: '#fff1f2' },
-    ];
-
     return (
         <>
             <header className="header-top">
@@ -235,26 +229,72 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* ── 5 Admin-style Stat Cards ── */}
                 <div className="dashboard-stats-row" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
-                    {statCards.map(({ label, value, icon: Icon, bg }) => (
-                        <div key={label} className="issues-stat-card">
-                            <div className="issues-stat-content">
-                                <div className="issues-stat-info">
-                                    <div className="issues-stat-label">{label}</div>
-                                    <div className="issues-stat-value">{value}</div>
-                                </div>
-                                <div className="issues-stat-icon" style={{ backgroundColor: bg }}>
-                                    <Icon size={24} color="#6b7280" />
-                                </div>
+                    {/* Total Issues */}
+                    <div className="issues-stat-card">
+                        <div className="issues-stat-content">
+                            <div className="issues-stat-info">
+                                <div className="issues-stat-label">Total Issues</div>
+                                <div className="issues-stat-value">{totalReports}</div>
+                            </div>
+                            <div className="issues-stat-icon" style={{ backgroundColor: '#e5e7eb' }}>
+                                <BarChart3 size={24} color="#6b7280" />
                             </div>
                         </div>
-                    ))}
+                    </div>
+                    {/* Pending */}
+                    <div className="issues-stat-card">
+                        <div className="issues-stat-content">
+                            <div className="issues-stat-info">
+                                <div className="issues-stat-label">Pending</div>
+                                <div className="issues-stat-value">{pendingIssues}</div>
+                            </div>
+                            <div className="issues-stat-icon" style={{ backgroundColor: '#ffedd5' }}>
+                                <AlertCircle size={24} color="#6b7280" />
+                            </div>
+                        </div>
+                    </div>
+                    {/* In Progress */}
+                    <div className="issues-stat-card">
+                        <div className="issues-stat-content">
+                            <div className="issues-stat-info">
+                                <div className="issues-stat-label">In Progress</div>
+                                <div className="issues-stat-value">{inProgressIssues}</div>
+                            </div>
+                            <div className="issues-stat-icon" style={{ backgroundColor: '#dbeafe' }}>
+                                <Clock size={24} color="#6b7280" />
+                            </div>
+                        </div>
+                    </div>
+                    {/* Resolved */}
+                    <div className="issues-stat-card">
+                        <div className="issues-stat-content">
+                            <div className="issues-stat-info">
+                                <div className="issues-stat-label">Resolved</div>
+                                <div className="issues-stat-value">{resolvedIssues}</div>
+                            </div>
+                            <div className="issues-stat-icon" style={{ backgroundColor: '#dcfce7' }}>
+                                <CheckCircle size={24} color="#6b7280" />
+                            </div>
+                        </div>
+                    </div>
+                    {/* Rejected */}
+                    <div className="issues-stat-card">
+                        <div className="issues-stat-content">
+                            <div className="issues-stat-info">
+                                <div className="issues-stat-label">Rejected</div>
+                                <div className="issues-stat-value">{rejectedIssues}</div>
+                            </div>
+                            <div className="issues-stat-icon" style={{ backgroundColor: '#fff1f2' }}>
+                                <X size={24} color="#6b7280" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="dashboard-main">
                     <aside className="dashboard-sidebar-panels">
-                        {/* Issue Categories */}
+                        {/* ── Issue Categories (now matches IssuesBrowser style) ── */}
                         <div className="panel issue-categories-panel">
                             <div className="panel-header">
                                 <h3><BarChart3 size={20} /> Issue Categories</h3>
@@ -264,12 +304,18 @@ const Dashboard = () => {
                                 {issueCategories.map((item, index) => (
                                     <div key={index} className="category-item">
                                         <div className="category-icon-title">
-                                            <span className="category-icon" style={{ backgroundColor: item.color }}>
+                                            <span
+                                                className="category-icon"
+                                                style={{ backgroundColor: item.color }}
+                                            >
                                                 {item.icon}
                                             </span>
                                             <span className="category-title">{item.category}</span>
                                         </div>
-                                        <span className="category-count" style={{ backgroundColor: item.color }}>
+                                        <span
+                                            className="category-count"
+                                            style={{ backgroundColor: item.color }}
+                                        >
                                             {item.count}
                                         </span>
                                     </div>
@@ -277,7 +323,7 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        {/* Community Impact */}
+                        {/* ── Community Impact ── */}
                         <div className="panel community-impact-panel">
                             <h3><Users size={20} /> Community Impact</h3>
                             <div className="impact-stats">
