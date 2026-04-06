@@ -26,16 +26,11 @@ const validateEmail = (email) => {
     const trimmed = email.trim().toLowerCase();
 
     const strictEmailRegex =
-        /^[a-zA-Z0-9]+([._%+\-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9]+([\-]?[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$/;
+        /^[a-zA-Z0-9]+([._%+\-]?[a-zA-Z0-9]+)*@gmail\.com$/;
 
     if (!strictEmailRegex.test(trimmed)) {
-        return 'Enter a valid email address (e.g. name@gmail.com).';
+        return 'Only Gmail addresses are allowed (e.g. name@gmail.com).';
     }
-
-    // OPTIONAL: force gmail only (if you want)
-    // if (!trimmed.endsWith('@gmail.com')) {
-    //     return 'Only Gmail addresses are allowed.';
-    // }
 
     return '';
 };
