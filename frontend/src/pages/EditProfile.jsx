@@ -40,7 +40,7 @@ const validateBio = (bio) => {
 };
 
 const EditProfile = () => {
-    const { user, updateUser } = useAuth();
+    const { user, signIn } = useAuth();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
@@ -118,7 +118,7 @@ const EditProfile = () => {
             const result = await response.json();
 
             if (response.ok) {
-                updateUser(result.data);
+                signIn(result.data);
                 navigate(getProfilePath(), { state: { successMessage: 'Profile updated successfully!' } });
             } else {
                 setSubmitError(result.message || 'Failed to update profile. Please try again.');
