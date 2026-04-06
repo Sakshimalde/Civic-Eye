@@ -22,25 +22,36 @@ const validateName = (name) => {
 
 const validateEmail = (email) => {
     if (!email || !email.trim()) return 'Email address is required.';
+
     const trimmed = email.trim().toLowerCase();
-    const strictEmailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
-    if (!strictEmailRegex.test(trimmed))
+
+    const strictEmailRegex =
+        /^[a-zA-Z0-9]+([._%+\-]?[a-zA-Z0-9]+)*@[a-zA-Z0-9]+([\-]?[a-zA-Z0-9]+)*(\.[a-zA-Z]{2,})+$/;
+
+    if (!strictEmailRegex.test(trimmed)) {
         return 'Enter a valid email address (e.g. name@gmail.com).';
-    const domain = trimmed.split('@')[1];
-    const blockedDomains = ['test.com', 'example.com', 'fake.com', 'abc.com', 'xyz.com'];
-    if (blockedDomains.includes(domain))
-        return 'Please use a real email address.';
+    }
+
+    // OPTIONAL: force gmail only (if you want)
+    // if (!trimmed.endsWith('@gmail.com')) {
+    //     return 'Only Gmail addresses are allowed.';
+    // }
+
     return '';
 };
 
 const validatePhone = (phone) => {
     if (!phone || !phone.trim()) return 'Phone number is required.';
-    const cleaned = phone.trim().replace(/[\s\-().+]/g, '');
-    if (!/^\d+$/.test(cleaned)) return 'Phone number can only contain digits, spaces, +, -, ( ).';
-    if (cleaned.length < 7) return 'Phone number is too short (minimum 7 digits).';
-    if (cleaned.length > 15) return 'Phone number is too long (maximum 15 digits).';
-    if (cleaned.length === 10 && !/^[6-9]/.test(cleaned))
-        return 'Indian mobile numbers must start with 6, 7, 8, or 9.';
+
+    const trimmed = phone.trim();
+
+    // Allow +91 or 10 digit
+    const phoneRegex = /^(?:\+91[\-\s]?|0)?[6-9]\d{9}$/;
+
+    if (!phoneRegex.test(trimmed)) {
+        return 'Enter a valid Indian phone number (e.g. 9876543210 or +91 9876543210).';
+    }
+
     return '';
 };
 
