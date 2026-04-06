@@ -1,35 +1,99 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AlertCircle } from 'lucide-react';
 
 import './SignUp.css';
 import { ArrowRight } from "lucide-react";
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+// ── Validation helpers ────────────────────────────────────────────────────────
+const validateName = (name) => {
+    if (!name || !name.trim()) return 'Full name is required.';
+    if (name.trim().length < 2) return 'Name must be at least 2 characters.';
+    if (name.trim().length > 60) return 'Name must not exceed 60 characters.';
+    if (!/^[a-zA-Z\s'-]+$/.test(name.trim())) return 'Name can only contain letters, spaces, hyphens, and apostrophes.';
+    return '';
+};
+
+const validateEmail = (email) => {
+    if (!email || !email.trim()) return 'Email address is required.';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email.trim())) return 'Please enter a valid email address (e.g. user@example.com).';
+    return '';
+};
+
+const validatePhone = (phone) => {
+    if (!phone || !phone.trim()) return ''; // optional
+    const cleaned = phone.replace(/[\s\-().+]/g, '');
+    if (!/^\d{7,15}$/.test(cleaned)) return 'Phone must be 7–15 digits (digits only, spaces/dashes allowed).';
+    return '';
+};
+
+const validatePasswordRules = (password) => ({
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+});
+
+const validatePassword = (password) => {
+    if (!password) return 'Password is required.';
+    const r = validatePasswordRules(password);
+    if (!r.length) return 'Password must be at least 8 characters.';
+    if (!r.uppercase) return 'Password must contain at least one uppercase letter.';
+    if (!r.lowercase) return 'Password must contain at least one lowercase letter.';
+    if (!r.number) return 'Password must contain at least one number.';
+    return '';
+};
+
+const validateConfirmPassword = (password, confirmPassword) => {
+    if (!confirmPassword) return 'Please confirm your password.';
+    if (password !== confirmPassword) return 'Passwords do not match.';
+    return '';
+};
+
+const validateLocation = (location) => {
+    if (!location || !location.trim()) return 'Location is required.';
+    if (location.trim().length < 2) return 'Location must be at least 2 characters.';
+    if (location.trim().length > 100) return 'Location must not exceed 100 characters.';
+    return '';
+};
+
+const FieldError = ({ message }) =>
+    message ? (
+        <span className="field-error" role="alert">
+            <AlertCircle size={13} /> {message}
+        </span>
+    ) : null;
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const SignUp = () => {
     const navigate = useNavigate();
-
-    const handleSignIn = () => navigate("/login");
-    const handleGetStarted = () => navigate("/signup");
 
     const [step, setStep] = useState(1);
     const [form, setForm] = useState({
         name: '',
         email: '',
+        phone: '',
         password: '',
         confirmPassword: '',
         location: '',
         role: null,
         profilePhoto: null,
     });
-
     const [showPassword, setShowPassword] = useState(false);
-    const [passwordStrength, setPasswordStrength] = useState({
-        length: false,
-        uppercase: false,
-        lowercase: false,
-        number: false,
-    });
+    const [errors, setErrors] = useState({});
+    const [stepError, setStepError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const passwordRules = validatePasswordRules(form.password);
+    const passwordStrengthScore = Object.values(passwordRules).filter(Boolean).length;
+    const strengthLabel = ['', 'Very Weak', 'Weak', 'Fair', 'Strong', 'Very Strong'][passwordStrengthScore];
+    const strengthPercent = (passwordStrengthScore / 5) * 100;
 
     // Handle input changes
     const handleChange = (e) => {
@@ -38,67 +102,106 @@ const SignUp = () => {
         if (name === 'profilePhoto') {
             const file = files[0];
             if (file) {
+                if (!file.type.startsWith('image/')) {
+                    setErrors(prev => ({ ...prev, profilePhoto: 'Only image files are allowed.' }));
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    setErrors(prev => ({ ...prev, profilePhoto: 'Profile photo must be under 5MB.' }));
+                    return;
+                }
                 const renamedFile = new File(
                     [file],
                     `user-${Date.now()}.${file.name.split('.').pop()}`,
                     { type: file.type }
                 );
-                setForm((prev) => ({ ...prev, profilePhoto: renamedFile }));
+                setForm(prev => ({ ...prev, profilePhoto: renamedFile }));
+                setErrors(prev => ({ ...prev, profilePhoto: '' }));
             }
-        } else {
-            setForm((prev) => ({ ...prev, [name]: value }));
-            if (name === 'password') validatePassword(value);
+            return;
         }
+
+        setForm(prev => ({ ...prev, [name]: value }));
+
+        // Live per-field validation
+        let fieldError = '';
+        if (name === 'name') fieldError = validateName(value);
+        else if (name === 'email') fieldError = validateEmail(value);
+        else if (name === 'phone') fieldError = validatePhone(value);
+        else if (name === 'password') {
+            fieldError = validatePassword(value);
+            // Also re-validate confirmPassword if already touched
+            if (form.confirmPassword) {
+                setErrors(prev => ({
+                    ...prev,
+                    confirmPassword: validateConfirmPassword(value, form.confirmPassword),
+                }));
+            }
+        }
+        else if (name === 'confirmPassword') fieldError = validateConfirmPassword(form.password, value);
+        else if (name === 'location') fieldError = validateLocation(value);
+
+        setErrors(prev => ({ ...prev, [name]: fieldError }));
+        setStepError('');
     };
 
-    // Validate password strength
-    const validatePassword = (password) => {
-        setPasswordStrength({
-            length: password.length >= 8,
-            uppercase: /[A-Z]/.test(password),
-            lowercase: /[a-z]/.test(password),
-            number: /[0-9]/.test(password),
-        });
+    // Step validation
+    const validateStep1 = () => {
+        const newErrors = {
+            name: validateName(form.name),
+            email: validateEmail(form.email),
+            phone: validatePhone(form.phone),
+        };
+        setErrors(prev => ({ ...prev, ...newErrors }));
+        return Object.values(newErrors).every(e => !e);
     };
 
-    // Step navigation
+    const validateStep2 = () => {
+        const newErrors = {
+            password: validatePassword(form.password),
+            confirmPassword: validateConfirmPassword(form.password, form.confirmPassword),
+        };
+        setErrors(prev => ({ ...prev, ...newErrors }));
+        return Object.values(newErrors).every(e => !e);
+    };
+
+    const validateStep3 = () => {
+        const newErrors = {
+            location: validateLocation(form.location),
+            role: form.role ? '' : 'Please select a role to continue.',
+        };
+        setErrors(prev => ({ ...prev, ...newErrors }));
+        return Object.values(newErrors).every(e => !e);
+    };
+
     const handleNextStep = (e) => {
         e.preventDefault();
+        setStepError('');
+
         if (step === 1) {
-            if (form.name && form.email) setStep(2);
-            else alert('Please fill in all required fields.');
+            if (validateStep1()) setStep(2);
+            else setStepError('Please fix the errors above to continue.');
         } else if (step === 2) {
-            if (
-                form.password === form.confirmPassword &&
-                passwordStrength.length &&
-                passwordStrength.uppercase &&
-                passwordStrength.lowercase &&
-                passwordStrength.number
-            )
-                setStep(3);
-            else alert('Passwords must match and meet strength requirements.');
+            if (validateStep2()) setStep(3);
+            else setStepError('Please fix the errors above to continue.');
         } else if (step === 3) {
-            if (form.role) {
-                handleSubmit(e);
-            } else {
-                alert('Please select a role.');
-            }
+            if (validateStep3()) handleSubmit(e);
+            else setStepError('Please fix the errors above to submit.');
         }
     };
 
-    // Submit registration with role-based redirect
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
         try {
             const formData = new FormData();
-            formData.append('name', form.name);
-            formData.append('email', form.email);
+            formData.append('name', form.name.trim());
+            formData.append('email', form.email.trim().toLowerCase());
             formData.append('password', form.password);
-            formData.append('location', form.location);
+            formData.append('location', form.location.trim());
             formData.append('role', form.role);
+            if (form.phone.trim()) formData.append('phone', form.phone.trim());
             if (form.profilePhoto) formData.append('profilePhoto', form.profilePhoto);
-
-            console.log('Submitting formData:', formData);
 
             const res = await axios.post(
                 `${BACKEND_URL}/api/v1/users/register`,
@@ -106,299 +209,311 @@ const SignUp = () => {
                 { withCredentials: true }
             );
 
-            console.log('Registration response:', res.data);
-            
-            // Store user data in localStorage
-            localStorage.setItem('userRole', form.role);
-            localStorage.setItem('userName', form.name);
-            localStorage.setItem('userEmail', form.email);
-            localStorage.setItem('userLocation', form.location);
-            
-            // Optional: Store token if backend sends it
-            if (res.data.token) {
-                localStorage.setItem('authToken', res.data.token);
-            }
-
-            alert(res.data.message || 'Registration Successful!');
-            
-            // Redirect based on role
-            if (form.role === 'volunteer') {
-                navigate('/login');
-            } else if (form.role === 'admin') {
-                navigate('/login');
-            } else if (form.role === 'user') {
-                navigate('/login');
-            } else {
-                // Default fallback
-                navigate('/');
-            }
-            
+            alert(res.data.message || 'Registration successful! Please sign in.');
+            navigate('/login');
         } catch (err) {
             const serverData = err.response?.data;
-            const serverMessage =
-                typeof serverData === 'string' ? serverData : serverData?.message;
-            console.error('Registration error:', serverData || err);
-            alert(
-                serverMessage || err.message || 'Error occurred during registration'
-            );
+            const message = typeof serverData === 'string' ? serverData : serverData?.message;
+            setStepError(message || err.message || 'Registration failed. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Render steps
-    const renderStep = () => {
-        switch (step) {
-            case 1:
-                return (
-                    <>
-                        <div className="form-step">
-                            <div className="input-group">
-                                <i className="input-icon">👤</i>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={form.name}
-                                    onChange={handleChange}
-                                    placeholder="Full Name"
-                                    required
-                                    className="input-field"
-                                />
-                            </div>
-                            <div className="input-group">
-                                <i className="input-icon">✉️</i>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={form.email}
-                                    onChange={handleChange}
-                                    placeholder="Email Address"
-                                    required
-                                    className="input-field"
-                                />
-                            </div>
-                            <div className="input-group">
-                                <i className="input-icon">📞</i>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    placeholder="Phone Number (Optional)"
-                                    className="input-field"
-                                />
-                            </div>
-                        </div>
+    // ── Step renderers ──────────────────────────────────────────────────────────
+    const renderStep1 = () => (
+        <>
+            <div className="form-step">
+                {/* Name */}
+                <div className={`input-wrapper ${errors.name ? 'has-error' : ''}`}>
+                    <div className="input-group">
+                        <i className="input-icon">👤</i>
+                        <input
+                            type="text"
+                            name="name"
+                            value={form.name}
+                            onChange={handleChange}
+                            placeholder="Full Name *"
+                            className="input-field"
+                            maxLength={60}
+                            aria-invalid={!!errors.name}
+                        />
+                    </div>
+                    <FieldError message={errors.name} />
+                </div>
+
+                {/* Email */}
+                <div className={`input-wrapper ${errors.email ? 'has-error' : ''}`}>
+                    <div className="input-group">
+                        <i className="input-icon">✉️</i>
+                        <input
+                            type="email"
+                            name="email"
+                            value={form.email}
+                            onChange={handleChange}
+                            placeholder="Email Address *"
+                            className="input-field"
+                            autoComplete="email"
+                            aria-invalid={!!errors.email}
+                        />
+                    </div>
+                    <FieldError message={errors.email} />
+                </div>
+
+                {/* Phone – now properly wired to form state */}
+                <div className={`input-wrapper ${errors.phone ? 'has-error' : ''}`}>
+                    <div className="input-group">
+                        <i className="input-icon">📞</i>
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={form.phone}
+                            onChange={handleChange}
+                            placeholder="Phone Number (Optional)"
+                            className="input-field"
+                            maxLength={20}
+                            aria-invalid={!!errors.phone}
+                        />
+                    </div>
+                    <FieldError message={errors.phone} />
+                </div>
+            </div>
+
+            <button type="button" onClick={handleNextStep} className="button-primary">
+                Continue to Security
+            </button>
+        </>
+    );
+
+    const renderStep2 = () => (
+        <>
+            <div className="form-step">
+                {/* Password */}
+                <div className={`input-wrapper ${errors.password ? 'has-error' : ''}`}>
+                    <div className="input-group">
+                        <i className="input-icon">🔐</i>
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            value={form.password}
+                            onChange={handleChange}
+                            placeholder="Create Password *"
+                            className="input-field"
+                            autoComplete="new-password"
+                            aria-invalid={!!errors.password}
+                        />
                         <button
                             type="button"
-                            onClick={handleNextStep}
-                            className="button-primary"
+                            className="password-toggle"
+                            onClick={() => setShowPassword(p => !p)}
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
                         >
-                            Continue to Security
+                            {showPassword ? '👁️' : '🔒'}
                         </button>
-                    </>
-                );
-            case 2:
-                const passwordStrengthProgress = (Object.values(passwordStrength).filter(Boolean).length / 4) * 100;
-                let strengthLabel = 'Weak';
-                if (passwordStrengthProgress > 25) strengthLabel = 'Fair';
-                if (passwordStrengthProgress > 75) strengthLabel = 'Strong';
-                
-                return (
-                    <>
-                        <div className="form-step">
-                            <div className="input-group">
-                                <i className="input-icon">🔐</i>
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    name="password"
-                                    value={form.password}
-                                    onChange={handleChange}
-                                    placeholder="Create Password"
-                                    required
-                                    className="input-field"
-                                />
-                                <button
-                                    type="button"
-                                    className="password-toggle"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                >
-                                    {showPassword ? '👁️' : '🔒'}
-                                </button>
-                            </div>
-                            <div className="password-strength-container">
-                                <div className="strength-bar-label">Password Strength</div>
-                                <div className="strength-bar">
-                                    <div className="strength-bar-fill" style={{ width: `${passwordStrengthProgress}%` }}></div>
-                                </div>
-                                <div className="strength-label" style={{ color: passwordStrengthProgress < 50 ? '#e53e3e' : '#38a169' }}>
-                                    {strengthLabel}
-                                </div>
-                            </div>
-                            <div className="password-strength-checks">
-                                <p className={passwordStrength.length ? 'met' : 'unmet'}>
-                                    <i className="check-icon">{passwordStrength.length ? '✔' : '⚪'}</i>8+ characters
-                                </p>
-                                <p className={passwordStrength.uppercase ? 'met' : 'unmet'}>
-                                    <i className="check-icon">{passwordStrength.uppercase ? '✔' : '⚪'}</i>Uppercase
-                                </p>
-                                <p className={passwordStrength.lowercase ? 'met' : 'unmet'}>
-                                    <i className="check-icon">{passwordStrength.lowercase ? '✔' : '⚪'}</i>Lowercase
-                                </p>
-                                <p className={passwordStrength.number ? 'met' : 'unmet'}>
-                                    <i className="check-icon">{passwordStrength.number ? '✔' : '⚪'}</i>Number/Symbol
-                                </p>
-                            </div>
-                            <div className="input-group">
-                                <i className="input-icon">🔐</i>
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={form.confirmPassword}
-                                    onChange={handleChange}
-                                    placeholder="Confirm Password"
-                                    required
-                                    className="input-field"
-                                />
-                            </div>
-                        </div>
-                        <div className="button-group">
-                            <button
-                                type="button"
-                                onClick={() => setStep(1)}
-                                className="button-secondary"
-                            >
-                                Back
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleNextStep}
-                                className="button-primary"
-                            >
-                                Continue to Location
-                            </button>
-                        </div>
-                    </>
-                );
-            case 3:
-                return (
-                    <>
-                        <div className="form-step">
-                            <div className="input-group">
-                                <i className="input-icon">📍</i>
-                                <input
-                                    type="text"
-                                    name="location"
-                                    value={form.location}
-                                    onChange={handleChange}
-                                    placeholder="Your City/Location"
-                                    required
-                                    className="input-field"
-                                />
-                            </div>
-                            <div className="role-container">
-                                <div
-                                    className={`role-option ${form.role === 'user' ? 'active' : ''}`}
-                                    onClick={() => setForm((prev) => ({ ...prev, role: 'user' }))}
-                                >
-                                    <div className="role-info">
-                                        <i className="role-icon">👤</i>
-                                        <div className="role-text">
-                                            <h3>Citizen</h3>
-                                            <p>Report issues and vote on community problems</p>
-                                        </div>
-                                    </div>
-                                    {form.role === 'user' && <i className="check-icon-active">✔️</i>}
-                                </div>
+                    </div>
+                    <FieldError message={errors.password} />
+                </div>
 
-                                <div
-                                    className={`role-option ${form.role === 'volunteer' ? 'active' : ''}`}
-                                    onClick={() => setForm((prev) => ({ ...prev, role: 'volunteer' }))}
-                                >
-                                    <div className="role-info">
-                                        <i className="role-icon">💪</i>
-                                        <div className="role-text">
-                                            <h3>Volunteer</h3>
-                                            <p>Help resolve issues and assist the community</p>
-                                        </div>
-                                    </div>
-                                    {form.role === 'volunteer' && <i className="check-icon-active">✔️</i>}
-                                </div>
-                                
-                                <div
-                                    className={`role-option ${form.role === 'admin' ? 'active' : ''}`}
-                                    onClick={() => setForm((prev) => ({ ...prev, role: 'admin' }))}
-                                >
-                                    <div className="role-info">
-                                        <i className="role-icon">👑</i>
-                                        <div className="role-text">
-                                            <h3>Administrator</h3>
-                                            <p>Manage the platform and oversee operations</p>
-                                        </div>
-                                    </div>
-                                    {form.role === 'admin' && <i className="check-icon-active">✔️</i>}
+                {/* Strength bar */}
+                {form.password && (
+                    <div className="password-strength-container">
+                        <div className="strength-bar-label">Password Strength</div>
+                        <div className="strength-bar">
+                            <div
+                                className="strength-bar-fill"
+                                style={{
+                                    width: `${strengthPercent}%`,
+                                    backgroundColor: strengthPercent < 40 ? '#e53e3e' : strengthPercent < 80 ? '#ed8936' : '#38a169'
+                                }}
+                            />
+                        </div>
+                        <div className="strength-label" style={{ color: strengthPercent < 40 ? '#e53e3e' : strengthPercent < 80 ? '#ed8936' : '#38a169' }}>
+                            {strengthLabel}
+                        </div>
+                    </div>
+                )}
+
+                {/* Requirement checklist */}
+                <div className="password-strength-checks">
+                    <p className={passwordRules.length ? 'met' : 'unmet'}>
+                        <i className="check-icon">{passwordRules.length ? '✔' : '⚪'}</i> 8+ characters
+                    </p>
+                    <p className={passwordRules.uppercase ? 'met' : 'unmet'}>
+                        <i className="check-icon">{passwordRules.uppercase ? '✔' : '⚪'}</i> Uppercase letter
+                    </p>
+                    <p className={passwordRules.lowercase ? 'met' : 'unmet'}>
+                        <i className="check-icon">{passwordRules.lowercase ? '✔' : '⚪'}</i> Lowercase letter
+                    </p>
+                    <p className={passwordRules.number ? 'met' : 'unmet'}>
+                        <i className="check-icon">{passwordRules.number ? '✔' : '⚪'}</i> Number
+                    </p>
+                    <p className={passwordRules.special ? 'met' : 'unmet'}>
+                        <i className="check-icon">{passwordRules.special ? '✔' : '⚪'}</i> Special character
+                    </p>
+                </div>
+
+                {/* Confirm Password */}
+                <div className={`input-wrapper ${errors.confirmPassword ? 'has-error' : ''}`}>
+                    <div className="input-group">
+                        <i className="input-icon">🔐</i>
+                        <input
+                            type="password"
+                            name="confirmPassword"
+                            value={form.confirmPassword}
+                            onChange={handleChange}
+                            placeholder="Confirm Password *"
+                            className="input-field"
+                            autoComplete="new-password"
+                            aria-invalid={!!errors.confirmPassword}
+                        />
+                    </div>
+                    <FieldError message={errors.confirmPassword} />
+                </div>
+            </div>
+
+            <div className="button-group">
+                <button type="button" onClick={() => setStep(1)} className="button-secondary">Back</button>
+                <button type="button" onClick={handleNextStep} className="button-primary">
+                    Continue to Location
+                </button>
+            </div>
+        </>
+    );
+
+    const renderStep3 = () => (
+        <>
+            <div className="form-step">
+                {/* Location */}
+                <div className={`input-wrapper ${errors.location ? 'has-error' : ''}`}>
+                    <div className="input-group">
+                        <i className="input-icon">📍</i>
+                        <input
+                            type="text"
+                            name="location"
+                            value={form.location}
+                            onChange={handleChange}
+                            placeholder="Your City / Location *"
+                            className="input-field"
+                            maxLength={100}
+                            aria-invalid={!!errors.location}
+                        />
+                    </div>
+                    <FieldError message={errors.location} />
+                </div>
+
+                {/* Role selection */}
+                <div className="role-container">
+                    {[
+                        { value: 'user', icon: '👤', title: 'Citizen', desc: 'Report issues and vote on community problems' },
+                        { value: 'volunteer', icon: '💪', title: 'Volunteer', desc: 'Help resolve issues and assist the community' },
+                        { value: 'admin', icon: '👑', title: 'Administrator', desc: 'Manage the platform and oversee operations' },
+                    ].map(({ value, icon, title, desc }) => (
+                        <div
+                            key={value}
+                            className={`role-option ${form.role === value ? 'active' : ''}`}
+                            onClick={() => {
+                                setForm(prev => ({ ...prev, role: value }));
+                                setErrors(prev => ({ ...prev, role: '' }));
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && setForm(prev => ({ ...prev, role: value }))}
+                            aria-pressed={form.role === value}
+                        >
+                            <div className="role-info">
+                                <i className="role-icon">{icon}</i>
+                                <div className="role-text">
+                                    <h3>{title}</h3>
+                                    <p>{desc}</p>
                                 </div>
                             </div>
-                            <div className="terms-checkbox">
-                                <input type="checkbox" id="terms" required />
-                                <label htmlFor="terms">
-                                    I agree to the <a href="/">Terms of Service</a> and{' '}
-                                    <a href="/">Privacy Policy</a>
-                                </label>
-                            </div>
+                            {form.role === value && <i className="check-icon-active">✔️</i>}
                         </div>
-                        <div className="button-group">
-                            <button
-                                type="button"
-                                onClick={() => setStep(2)}
-                                className="button-secondary"
-                            >
-                                Back
-                            </button>
-                            <button type="submit" onClick={handleNextStep} className="button-primary">
-                                Register
-                            </button>
-                        </div>
-                    </>
-                );
-            default:
-                return null;
-        }
+                    ))}
+                </div>
+                <FieldError message={errors.role} />
+
+                {/* Terms */}
+                <div className="terms-checkbox">
+                    <input type="checkbox" id="terms" required />
+                    <label htmlFor="terms">
+                        I agree to the <a href="/">Terms of Service</a> and{' '}
+                        <a href="/">Privacy Policy</a>
+                    </label>
+                </div>
+            </div>
+
+            <div className="button-group">
+                <button type="button" onClick={() => setStep(2)} className="button-secondary">Back</button>
+                <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="button-primary"
+                    disabled={loading}
+                >
+                    {loading ? 'Registering...' : 'Register'}
+                </button>
+            </div>
+        </>
+    );
+
+    const renderStep = () => {
+        if (step === 1) return renderStep1();
+        if (step === 2) return renderStep2();
+        if (step === 3) return renderStep3();
+        return null;
     };
 
     return (
         <>
             <div className="header-top">
-                
                 <div className="nav-links">
                     <Link to="/">Home</Link>
                     <Link to="/help">Help</Link>
                     <Link to="/about">About</Link>
                 </div>
                 <div className="auth-buttons">
-                    <button onClick={handleSignIn} className="sign-in-btn">
+                    <button onClick={() => navigate('/login')} className="sign-in-btn">
                         Sign In <ArrowRight size={16} />
                     </button>
-                    <button onClick={handleGetStarted} className="get-started-btn">Get Started</button>
+                    <button onClick={() => navigate('/signup')} className="get-started-btn">Get Started</button>
                 </div>
             </div>
+
             <div className="signup-page">
                 <div className="signup-panel-left">
                     <div className="form-card">
                         <h1 className="form-title">Join CivicEye</h1>
                         <p className="form-subtitle">Help make your community cleaner and better</p>
 
+                        {/* Progress bar */}
                         <div className="progress-bar-container">
-                            <div className="progress-line-fill" style={{ width: `${(step - 1) * 50}%` }}></div>
-                            <div className={`progress-step ${step >= 1 ? 'active' : ''}`}></div>
-                            <div className={`progress-step ${step >= 2 ? 'active' : ''}`}></div>
-                            <div className={`progress-step ${step >= 3 ? 'active' : ''}`}></div>
+                            <div className="progress-line-fill" style={{ width: `${(step - 1) * 50}%` }} />
+                            {[1, 2, 3].map(s => (
+                                <div key={s} className={`progress-step ${step >= s ? 'active' : ''}`} />
+                            ))}
                         </div>
-                        <p className="step-label">Step {step} of 3: {step === 1 ? 'Personal Information' : step === 2 ? 'Account Security' : 'Location & Role'}</p>
-                        <form onSubmit={handleSubmit}>
+                        <p className="step-label">
+                            Step {step} of 3:{' '}
+                            {step === 1 ? 'Personal Information' : step === 2 ? 'Account Security' : 'Location & Role'}
+                        </p>
+
+                        {stepError && (
+                            <div className="submit-error-banner" role="alert">
+                                <AlertCircle size={16} /> {stepError}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} noValidate>
                             {renderStep()}
                         </form>
+
                         <div className="login-link">
                             Already have an account? <Link to="/login">Sign In</Link>
                         </div>
                     </div>
                 </div>
+
                 <div className="signup-panel-right">
                     <div className="right-panel-content">
                         <h2 className="right-panel-title">Join Our Community!</h2>
@@ -406,16 +521,6 @@ const SignUp = () => {
                             Sign up today to start reporting issues, tracking progress, and helping
                             your community thrive.
                         </p>
-                        <div className="stats-container">
-                            <div className="stat-item">
-                                <div className="stat-value"></div>
-                                <div className="stat-label"></div>
-                            </div>
-                            <div className="stat-item">
-                                <div className="stat-value"></div>
-                                <div className="stat-label"></div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

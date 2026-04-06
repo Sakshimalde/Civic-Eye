@@ -138,7 +138,7 @@ const AdminProfile = () => {
                     <p className="profile-joined">{getJoinedDate(mockUser.createdAt)}</p>
 
                     <div className="profile-actions">
-                        <button className="update-profile-btn" onClick={() => navigate('/edit-admin-profile')}>
+                        <button className="update-profile-btn" onClick={() => navigate('/edit-profile')}>
                             <Edit3 size={16} /> Edit Profile
                         </button>
                         <button className="logout-btn" onClick={handleLogout}>

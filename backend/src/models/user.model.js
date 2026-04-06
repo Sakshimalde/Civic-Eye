@@ -5,20 +5,38 @@ import jwt from 'jsonwebtoken';
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true, // Full name of the user
+    required: true,
+    trim: true,
+    minlength: 2,
+    maxlength: 60,
   },
   email: {
     type: String,
     required: true,
-    unique: true, // Email address
+    unique: true,
+    lowercase: true,
+    trim: true,
   },
   password: {
     type: String,
-    required: true, // Hashed password
+    required: true,
   },
   location: {
     type: String,
-    required: true, // User's geographic area
+    required: true,
+    trim: true,
+  },
+  // FIX: phone and bio fields were missing from the model
+  phone: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+  bio: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 500,
   },
   role: {
     type: String,
@@ -27,11 +45,10 @@ const userSchema = new mongoose.Schema({
   },
   profilePhoto: {
     type: String,
-    default: '', // Link to profile image
+    default: '',
   },
   resetPasswordToken: String,
-resetPasswordExpires: Date,
-
+  resetPasswordExpires: Date,
   createdAt: {
     type: Date,
     default: Date.now,
@@ -39,13 +56,12 @@ resetPasswordExpires: Date,
   refreshToken: {
     type: String,
     default: '',
-  }
+  },
 });
 
-// Middleware to hash password before saving
+// Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-
   try {
     this.password = await bcrypt.hash(this.password, 10);
     next();
@@ -54,26 +70,21 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-// Method to compare password
+// Compare password
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Method to generate Refresh Token
+// Generate Refresh Token
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
-    {
-      _id: this._id,
-      role: this.role,
-      email: this.email,
-      name: this.name,
-    },
+    { _id: this._id, role: this.role, email: this.email, name: this.name },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
   );
 };
 
-// Method to generate Access Token
+// Generate Access Token
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     { _id: this._id },
