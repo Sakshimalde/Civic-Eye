@@ -501,3 +501,56 @@
         padding: 2rem 1.5rem;
     }
 }
+/* ── Validation & Error Styles ─────────────────────────────────────── */
+
+/* Wrapper for each input + its error message */
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 4px;
+}
+
+/* Red border on invalid input wrapper */
+.input-wrapper.has-error .input-group {
+  border: 1.5px solid #e53e3e !important;
+  border-radius: 8px;
+}
+
+/* Inline field error message */
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  color: #e53e3e;
+  font-weight: 500;
+}
+
+/* Top-of-form step error banner */
+.submit-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fff5f5;
+  border: 1.5px solid #fc8181;
+  color: #c53030;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Role selection error */
+.role-container + .field-error {
+  margin-top: 8px;
+}
+
+/* Disable button while loading / submitting */
+.button-primary:disabled,
+.button-secondary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

@@ -91,3 +91,57 @@
 .cancel-btn:hover {
   background-color: #d9d9d9;
 }
+
+/* ── Validation & Error Styles ─────────────────────────────────────── */
+
+.form-group.has-error input,
+.form-group.has-error textarea {
+  border: 1.5px solid #e53e3e !important;
+}
+
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  font-size: 0.78rem;
+  color: #e53e3e;
+  font-weight: 500;
+}
+
+.submit-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fff5f5;
+  border: 1.5px solid #fc8181;
+  color: #c53030;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.char-count {
+  text-align: right;
+  font-size: 0.75rem;
+  color: #718096;
+  margin-top: 3px;
+}
+
+.required {
+  color: #e53e3e;
+  margin-left: 2px;
+}
+
+.optional {
+  color: #a0aec0;
+  font-size: 0.78rem;
+  margin-left: 4px;
+}
+
+.save-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
