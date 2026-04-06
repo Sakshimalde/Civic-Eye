@@ -554,3 +554,15 @@
   opacity: 0.65;
   cursor: not-allowed;
 }
+
+/* ── Valid state (green border + icon) ─────────────────────────────── */
+.input-wrapper.is-valid .input-group {
+    border: 1.5px solid #38a169 !important;
+    border-radius: 8px;
+}
+
+.valid-icon {
+    color: #38a169;
+    flex-shrink: 0;
+    margin-right: 8px;
+}

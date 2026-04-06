@@ -1,33 +1,46 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
-
+import { AlertCircle, CheckCircle } from 'lucide-react';
 import './SignUp.css';
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // ── Validation helpers ────────────────────────────────────────────────────────
+
 const validateName = (name) => {
     if (!name || !name.trim()) return 'Full name is required.';
     if (name.trim().length < 2) return 'Name must be at least 2 characters.';
     if (name.trim().length > 60) return 'Name must not exceed 60 characters.';
-    if (!/^[a-zA-Z\s'-]+$/.test(name.trim())) return 'Name can only contain letters, spaces, hyphens, and apostrophes.';
+    if (!/^[a-zA-Z\s'-]+$/.test(name.trim()))
+        return 'Name can only contain letters, spaces, hyphens, and apostrophes.';
+    if (/^\s/.test(name) || /\s$/.test(name))
+        return 'Name must not start or end with a space.';
     return '';
 };
 
 const validateEmail = (email) => {
     if (!email || !email.trim()) return 'Email address is required.';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-    if (!emailRegex.test(email.trim())) return 'Please enter a valid email address (e.g. user@example.com).';
+    const trimmed = email.trim().toLowerCase();
+    const strictEmailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+    if (!strictEmailRegex.test(trimmed))
+        return 'Enter a valid email address (e.g. name@gmail.com).';
+    const domain = trimmed.split('@')[1];
+    const blockedDomains = ['test.com', 'example.com', 'fake.com', 'abc.com', 'xyz.com'];
+    if (blockedDomains.includes(domain))
+        return 'Please use a real email address.';
     return '';
 };
 
 const validatePhone = (phone) => {
-    if (!phone || !phone.trim()) return ''; // optional
-    const cleaned = phone.replace(/[\s\-().+]/g, '');
-    if (!/^\d{7,15}$/.test(cleaned)) return 'Phone must be 7–15 digits (digits only, spaces/dashes allowed).';
+    if (!phone || !phone.trim()) return 'Phone number is required.';
+    const cleaned = phone.trim().replace(/[\s\-().+]/g, '');
+    if (!/^\d+$/.test(cleaned)) return 'Phone number can only contain digits, spaces, +, -, ( ).';
+    if (cleaned.length < 7) return 'Phone number is too short (minimum 7 digits).';
+    if (cleaned.length > 15) return 'Phone number is too long (maximum 15 digits).';
+    if (cleaned.length === 10 && !/^[6-9]/.test(cleaned))
+        return 'Indian mobile numbers must start with 6, 7, 8, or 9.';
     return '';
 };
 
@@ -43,9 +56,9 @@ const validatePassword = (password) => {
     if (!password) return 'Password is required.';
     const r = validatePasswordRules(password);
     if (!r.length) return 'Password must be at least 8 characters.';
-    if (!r.uppercase) return 'Password must contain at least one uppercase letter.';
-    if (!r.lowercase) return 'Password must contain at least one lowercase letter.';
-    if (!r.number) return 'Password must contain at least one number.';
+    if (!r.uppercase) return 'Password must include at least one uppercase letter (A-Z).';
+    if (!r.lowercase) return 'Password must include at least one lowercase letter (a-z).';
+    if (!r.number) return 'Password must include at least one number (0-9).';
     return '';
 };
 
@@ -76,100 +89,83 @@ const SignUp = () => {
 
     const [step, setStep] = useState(1);
     const [form, setForm] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        location: '',
-        role: null,
-        profilePhoto: null,
+        name: '', email: '', phone: '',
+        password: '', confirmPassword: '',
+        location: '', role: null, profilePhoto: null,
     });
     const [showPassword, setShowPassword] = useState(false);
     const [errors, setErrors] = useState({});
+    const [touched, setTouched] = useState({});
     const [stepError, setStepError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const passwordRules = validatePasswordRules(form.password);
     const passwordStrengthScore = Object.values(passwordRules).filter(Boolean).length;
     const strengthLabel = ['', 'Very Weak', 'Weak', 'Fair', 'Strong', 'Very Strong'][passwordStrengthScore];
+    const strengthColor = passwordStrengthScore <= 2 ? '#e53e3e' : passwordStrengthScore <= 3 ? '#ed8936' : '#38a169';
     const strengthPercent = (passwordStrengthScore / 5) * 100;
 
-    // Handle input changes
+    const getFieldError = (name, value) => {
+        if (name === 'name') return validateName(value);
+        if (name === 'email') return validateEmail(value);
+        if (name === 'phone') return validatePhone(value);
+        if (name === 'password') return validatePassword(value);
+        if (name === 'confirmPassword') return validateConfirmPassword(form.password, value);
+        if (name === 'location') return validateLocation(value);
+        return '';
+    };
+
     const handleChange = (e) => {
         const { name, value, files } = e.target;
 
         if (name === 'profilePhoto') {
             const file = files[0];
             if (file) {
-                if (!file.type.startsWith('image/')) {
-                    setErrors(prev => ({ ...prev, profilePhoto: 'Only image files are allowed.' }));
-                    return;
-                }
-                if (file.size > 5 * 1024 * 1024) {
-                    setErrors(prev => ({ ...prev, profilePhoto: 'Profile photo must be under 5MB.' }));
-                    return;
-                }
-                const renamedFile = new File(
-                    [file],
-                    `user-${Date.now()}.${file.name.split('.').pop()}`,
-                    { type: file.type }
-                );
-                setForm(prev => ({ ...prev, profilePhoto: renamedFile }));
-                setErrors(prev => ({ ...prev, profilePhoto: '' }));
+                if (!file.type.startsWith('image/')) { setErrors(p => ({ ...p, profilePhoto: 'Only image files are allowed.' })); return; }
+                if (file.size > 5 * 1024 * 1024) { setErrors(p => ({ ...p, profilePhoto: 'Profile photo must be under 5MB.' })); return; }
+                const renamed = new File([file], `user-${Date.now()}.${file.name.split('.').pop()}`, { type: file.type });
+                setForm(p => ({ ...p, profilePhoto: renamed }));
+                setErrors(p => ({ ...p, profilePhoto: '' }));
             }
             return;
         }
 
         setForm(prev => ({ ...prev, [name]: value }));
+        setStepError('');
 
-        // Live per-field validation
-        let fieldError = '';
-        if (name === 'name') fieldError = validateName(value);
-        else if (name === 'email') fieldError = validateEmail(value);
-        else if (name === 'phone') fieldError = validatePhone(value);
-        else if (name === 'password') {
-            fieldError = validatePassword(value);
-            // Also re-validate confirmPassword if already touched
-            if (form.confirmPassword) {
-                setErrors(prev => ({
-                    ...prev,
-                    confirmPassword: validateConfirmPassword(value, form.confirmPassword),
-                }));
+        if (touched[name]) {
+            const fieldError = getFieldError(name, value);
+            if (name === 'password' && touched.confirmPassword) {
+                setErrors(prev => ({ ...prev, [name]: fieldError, confirmPassword: validateConfirmPassword(value, form.confirmPassword) }));
+            } else {
+                setErrors(prev => ({ ...prev, [name]: fieldError }));
             }
         }
-        else if (name === 'confirmPassword') fieldError = validateConfirmPassword(form.password, value);
-        else if (name === 'location') fieldError = validateLocation(value);
-
-        setErrors(prev => ({ ...prev, [name]: fieldError }));
-        setStepError('');
     };
 
-    // Step validation
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched(prev => ({ ...prev, [name]: true }));
+        setErrors(prev => ({ ...prev, [name]: getFieldError(name, value) }));
+    };
+
     const validateStep1 = () => {
-        const newErrors = {
-            name: validateName(form.name),
-            email: validateEmail(form.email),
-            phone: validatePhone(form.phone),
-        };
+        const newErrors = { name: validateName(form.name), email: validateEmail(form.email), phone: validatePhone(form.phone) };
+        setTouched(prev => ({ ...prev, name: true, email: true, phone: true }));
         setErrors(prev => ({ ...prev, ...newErrors }));
         return Object.values(newErrors).every(e => !e);
     };
 
     const validateStep2 = () => {
-        const newErrors = {
-            password: validatePassword(form.password),
-            confirmPassword: validateConfirmPassword(form.password, form.confirmPassword),
-        };
+        const newErrors = { password: validatePassword(form.password), confirmPassword: validateConfirmPassword(form.password, form.confirmPassword) };
+        setTouched(prev => ({ ...prev, password: true, confirmPassword: true }));
         setErrors(prev => ({ ...prev, ...newErrors }));
         return Object.values(newErrors).every(e => !e);
     };
 
     const validateStep3 = () => {
-        const newErrors = {
-            location: validateLocation(form.location),
-            role: form.role ? '' : 'Please select a role to continue.',
-        };
+        const newErrors = { location: validateLocation(form.location), role: form.role ? '' : 'Please select a role to continue.' };
+        setTouched(prev => ({ ...prev, location: true }));
         setErrors(prev => ({ ...prev, ...newErrors }));
         return Object.values(newErrors).every(e => !e);
     };
@@ -177,17 +173,9 @@ const SignUp = () => {
     const handleNextStep = (e) => {
         e.preventDefault();
         setStepError('');
-
-        if (step === 1) {
-            if (validateStep1()) setStep(2);
-            else setStepError('Please fix the errors above to continue.');
-        } else if (step === 2) {
-            if (validateStep2()) setStep(3);
-            else setStepError('Please fix the errors above to continue.');
-        } else if (step === 3) {
-            if (validateStep3()) handleSubmit(e);
-            else setStepError('Please fix the errors above to submit.');
-        }
+        if (step === 1) { if (validateStep1()) setStep(2); else setStepError('Please fix the errors above to continue.'); }
+        else if (step === 2) { if (validateStep2()) setStep(3); else setStepError('Please fix the errors above to continue.'); }
+        else if (step === 3) { if (validateStep3()) handleSubmit(e); else setStepError('Please fix the errors above to register.'); }
     };
 
     const handleSubmit = async (e) => {
@@ -200,15 +188,9 @@ const SignUp = () => {
             formData.append('password', form.password);
             formData.append('location', form.location.trim());
             formData.append('role', form.role);
-            if (form.phone.trim()) formData.append('phone', form.phone.trim());
+            formData.append('phone', form.phone.trim());
             if (form.profilePhoto) formData.append('profilePhoto', form.profilePhoto);
-
-            const res = await axios.post(
-                `${BACKEND_URL}/api/v1/users/register`,
-                formData,
-                { withCredentials: true }
-            );
-
+            const res = await axios.post(`${BACKEND_URL}/api/v1/users/register`, formData, { withCredentials: true });
             alert(res.data.message || 'Registration successful! Please sign in.');
             navigate('/login');
         } catch (err) {
@@ -220,65 +202,63 @@ const SignUp = () => {
         }
     };
 
-    // ── Step renderers ──────────────────────────────────────────────────────────
+    // ── Step renderers ────────────────────────────────────────────────────────
+
+    const inputState = (field) => {
+        if (!touched[field]) return '';
+        return errors[field] ? 'has-error' : form[field] ? 'is-valid' : '';
+    };
+
     const renderStep1 = () => (
         <>
             <div className="form-step">
-                {/* Name */}
-                <div className={`input-wrapper ${errors.name ? 'has-error' : ''}`}>
+
+                {/* Full Name */}
+                <div className={`input-wrapper ${inputState('name')}`}>
                     <div className="input-group">
                         <i className="input-icon">👤</i>
                         <input
-                            type="text"
-                            name="name"
-                            value={form.name}
-                            onChange={handleChange}
-                            placeholder="Full Name *"
-                            className="input-field"
-                            maxLength={60}
-                            aria-invalid={!!errors.name}
+                            type="text" name="name" value={form.name}
+                            onChange={handleChange} onBlur={handleBlur}
+                            placeholder="Full Name *" className="input-field"
+                            maxLength={60} autoComplete="name"
                         />
+                        {touched.name && !errors.name && form.name && <CheckCircle size={16} className="valid-icon" />}
                     </div>
-                    <FieldError message={errors.name} />
+                    {touched.name && <FieldError message={errors.name} />}
                 </div>
 
                 {/* Email */}
-                <div className={`input-wrapper ${errors.email ? 'has-error' : ''}`}>
+                <div className={`input-wrapper ${inputState('email')}`}>
                     <div className="input-group">
                         <i className="input-icon">✉️</i>
                         <input
-                            type="email"
-                            name="email"
-                            value={form.email}
-                            onChange={handleChange}
-                            placeholder="Email Address *"
-                            className="input-field"
+                            type="email" name="email" value={form.email}
+                            onChange={handleChange} onBlur={handleBlur}
+                            placeholder="Email Address * (e.g. name@gmail.com)" className="input-field"
                             autoComplete="email"
-                            aria-invalid={!!errors.email}
                         />
+                        {touched.email && !errors.email && form.email && <CheckCircle size={16} className="valid-icon" />}
                     </div>
-                    <FieldError message={errors.email} />
+                    {touched.email && <FieldError message={errors.email} />}
                 </div>
 
-                {/* Phone – now properly wired to form state */}
-                <div className={`input-wrapper ${errors.phone ? 'has-error' : ''}`}>
+                {/* Phone */}
+                <div className={`input-wrapper ${inputState('phone')}`}>
                     <div className="input-group">
                         <i className="input-icon">📞</i>
                         <input
-                            type="tel"
-                            name="phone"
-                            value={form.phone}
-                            onChange={handleChange}
-                            placeholder="Phone Number (Optional)"
-                            className="input-field"
-                            maxLength={20}
-                            aria-invalid={!!errors.phone}
+                            type="tel" name="phone" value={form.phone}
+                            onChange={handleChange} onBlur={handleBlur}
+                            placeholder="Phone Number * (e.g. 9876543210)" className="input-field"
+                            maxLength={20} autoComplete="tel"
                         />
+                        {touched.phone && !errors.phone && form.phone && <CheckCircle size={16} className="valid-icon" />}
                     </div>
-                    <FieldError message={errors.phone} />
+                    {touched.phone && <FieldError message={errors.phone} />}
                 </div>
-            </div>
 
+            </div>
             <button type="button" onClick={handleNextStep} className="button-primary">
                 Continue to Security
             </button>
@@ -288,94 +268,70 @@ const SignUp = () => {
     const renderStep2 = () => (
         <>
             <div className="form-step">
+
                 {/* Password */}
-                <div className={`input-wrapper ${errors.password ? 'has-error' : ''}`}>
+                <div className={`input-wrapper ${touched.password && errors.password ? 'has-error' : ''}`}>
                     <div className="input-group">
                         <i className="input-icon">🔐</i>
                         <input
-                            type={showPassword ? 'text' : 'password'}
-                            name="password"
-                            value={form.password}
-                            onChange={handleChange}
-                            placeholder="Create Password *"
-                            className="input-field"
+                            type={showPassword ? 'text' : 'password'} name="password" value={form.password}
+                            onChange={handleChange} onBlur={handleBlur}
+                            placeholder="Create Password *" className="input-field"
                             autoComplete="new-password"
-                            aria-invalid={!!errors.password}
                         />
-                        <button
-                            type="button"
-                            className="password-toggle"
-                            onClick={() => setShowPassword(p => !p)}
-                            aria-label={showPassword ? 'Hide password' : 'Show password'}
-                        >
+                        <button type="button" className="password-toggle" onClick={() => setShowPassword(p => !p)}
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}>
                             {showPassword ? '👁️' : '🔒'}
                         </button>
                     </div>
-                    <FieldError message={errors.password} />
+                    {touched.password && <FieldError message={errors.password} />}
                 </div>
 
-                {/* Strength bar */}
                 {form.password && (
                     <div className="password-strength-container">
                         <div className="strength-bar-label">Password Strength</div>
                         <div className="strength-bar">
-                            <div
-                                className="strength-bar-fill"
-                                style={{
-                                    width: `${strengthPercent}%`,
-                                    backgroundColor: strengthPercent < 40 ? '#e53e3e' : strengthPercent < 80 ? '#ed8936' : '#38a169'
-                                }}
-                            />
+                            <div className="strength-bar-fill" style={{ width: `${strengthPercent}%`, backgroundColor: strengthColor }} />
                         </div>
-                        <div className="strength-label" style={{ color: strengthPercent < 40 ? '#e53e3e' : strengthPercent < 80 ? '#ed8936' : '#38a169' }}>
-                            {strengthLabel}
-                        </div>
+                        <div className="strength-label" style={{ color: strengthColor }}>{strengthLabel}</div>
                     </div>
                 )}
 
-                {/* Requirement checklist */}
                 <div className="password-strength-checks">
-                    <p className={passwordRules.length ? 'met' : 'unmet'}>
-                        <i className="check-icon">{passwordRules.length ? '✔' : '⚪'}</i> 8+ characters
-                    </p>
-                    <p className={passwordRules.uppercase ? 'met' : 'unmet'}>
-                        <i className="check-icon">{passwordRules.uppercase ? '✔' : '⚪'}</i> Uppercase letter
-                    </p>
-                    <p className={passwordRules.lowercase ? 'met' : 'unmet'}>
-                        <i className="check-icon">{passwordRules.lowercase ? '✔' : '⚪'}</i> Lowercase letter
-                    </p>
-                    <p className={passwordRules.number ? 'met' : 'unmet'}>
-                        <i className="check-icon">{passwordRules.number ? '✔' : '⚪'}</i> Number
-                    </p>
-                    <p className={passwordRules.special ? 'met' : 'unmet'}>
-                        <i className="check-icon">{passwordRules.special ? '✔' : '⚪'}</i> Special character
-                    </p>
+                    {[
+                        { rule: passwordRules.length,    label: '8+ characters' },
+                        { rule: passwordRules.uppercase, label: 'Uppercase letter (A-Z)' },
+                        { rule: passwordRules.lowercase, label: 'Lowercase letter (a-z)' },
+                        { rule: passwordRules.number,    label: 'Number (0-9)' },
+                        { rule: passwordRules.special,   label: 'Special character (!@#$…)' },
+                    ].map(({ rule, label }) => (
+                        <p key={label} className={rule ? 'met' : 'unmet'}>
+                            <i className="check-icon">{rule ? '✔' : '⚪'}</i> {label}
+                        </p>
+                    ))}
                 </div>
 
                 {/* Confirm Password */}
-                <div className={`input-wrapper ${errors.confirmPassword ? 'has-error' : ''}`}>
+                <div className={`input-wrapper ${inputState('confirmPassword')}`}>
                     <div className="input-group">
                         <i className="input-icon">🔐</i>
                         <input
-                            type="password"
-                            name="confirmPassword"
-                            value={form.confirmPassword}
-                            onChange={handleChange}
-                            placeholder="Confirm Password *"
-                            className="input-field"
+                            type="password" name="confirmPassword" value={form.confirmPassword}
+                            onChange={handleChange} onBlur={handleBlur}
+                            placeholder="Confirm Password *" className="input-field"
                             autoComplete="new-password"
-                            aria-invalid={!!errors.confirmPassword}
                         />
+                        {touched.confirmPassword && !errors.confirmPassword && form.confirmPassword && (
+                            <CheckCircle size={16} className="valid-icon" />
+                        )}
                     </div>
-                    <FieldError message={errors.confirmPassword} />
+                    {touched.confirmPassword && <FieldError message={errors.confirmPassword} />}
                 </div>
-            </div>
 
+            </div>
             <div className="button-group">
                 <button type="button" onClick={() => setStep(1)} className="button-secondary">Back</button>
-                <button type="button" onClick={handleNextStep} className="button-primary">
-                    Continue to Location
-                </button>
+                <button type="button" onClick={handleNextStep} className="button-primary">Continue to Location</button>
             </div>
         </>
     );
@@ -383,49 +339,40 @@ const SignUp = () => {
     const renderStep3 = () => (
         <>
             <div className="form-step">
+
                 {/* Location */}
-                <div className={`input-wrapper ${errors.location ? 'has-error' : ''}`}>
+                <div className={`input-wrapper ${inputState('location')}`}>
                     <div className="input-group">
                         <i className="input-icon">📍</i>
                         <input
-                            type="text"
-                            name="location"
-                            value={form.location}
-                            onChange={handleChange}
-                            placeholder="Your City / Location *"
-                            className="input-field"
+                            type="text" name="location" value={form.location}
+                            onChange={handleChange} onBlur={handleBlur}
+                            placeholder="Your City / Location *" className="input-field"
                             maxLength={100}
-                            aria-invalid={!!errors.location}
                         />
+                        {touched.location && !errors.location && form.location && <CheckCircle size={16} className="valid-icon" />}
                     </div>
-                    <FieldError message={errors.location} />
+                    {touched.location && <FieldError message={errors.location} />}
                 </div>
 
                 {/* Role selection */}
                 <div className="role-container">
                     {[
-                        { value: 'user', icon: '👤', title: 'Citizen', desc: 'Report issues and vote on community problems' },
-                        { value: 'volunteer', icon: '💪', title: 'Volunteer', desc: 'Help resolve issues and assist the community' },
-                        { value: 'admin', icon: '👑', title: 'Administrator', desc: 'Manage the platform and oversee operations' },
+                        { value: 'user',      icon: '👤', title: 'Citizen',      desc: 'Report issues and vote on community problems' },
+                        { value: 'volunteer', icon: '💪', title: 'Volunteer',     desc: 'Help resolve issues and assist the community' },
+                        { value: 'admin',     icon: '👑', title: 'Administrator', desc: 'Manage the platform and oversee operations' },
                     ].map(({ value, icon, title, desc }) => (
                         <div
                             key={value}
                             className={`role-option ${form.role === value ? 'active' : ''}`}
-                            onClick={() => {
-                                setForm(prev => ({ ...prev, role: value }));
-                                setErrors(prev => ({ ...prev, role: '' }));
-                            }}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => e.key === 'Enter' && setForm(prev => ({ ...prev, role: value }))}
+                            onClick={() => { setForm(p => ({ ...p, role: value })); setErrors(p => ({ ...p, role: '' })); }}
+                            role="button" tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && setForm(p => ({ ...p, role: value }))}
                             aria-pressed={form.role === value}
                         >
                             <div className="role-info">
                                 <i className="role-icon">{icon}</i>
-                                <div className="role-text">
-                                    <h3>{title}</h3>
-                                    <p>{desc}</p>
-                                </div>
+                                <div className="role-text"><h3>{title}</h3><p>{desc}</p></div>
                             </div>
                             {form.role === value && <i className="check-icon-active">✔️</i>}
                         </div>
@@ -433,36 +380,22 @@ const SignUp = () => {
                 </div>
                 <FieldError message={errors.role} />
 
-                {/* Terms */}
                 <div className="terms-checkbox">
                     <input type="checkbox" id="terms" required />
                     <label htmlFor="terms">
-                        I agree to the <a href="/">Terms of Service</a> and{' '}
-                        <a href="/">Privacy Policy</a>
+                        I agree to the <a href="/">Terms of Service</a> and <a href="/">Privacy Policy</a>
                     </label>
                 </div>
-            </div>
 
+            </div>
             <div className="button-group">
                 <button type="button" onClick={() => setStep(2)} className="button-secondary">Back</button>
-                <button
-                    type="button"
-                    onClick={handleNextStep}
-                    className="button-primary"
-                    disabled={loading}
-                >
+                <button type="button" onClick={handleNextStep} className="button-primary" disabled={loading}>
                     {loading ? 'Registering...' : 'Register'}
                 </button>
             </div>
         </>
     );
-
-    const renderStep = () => {
-        if (step === 1) return renderStep1();
-        if (step === 2) return renderStep2();
-        if (step === 3) return renderStep3();
-        return null;
-    };
 
     return (
         <>
@@ -473,9 +406,7 @@ const SignUp = () => {
                     <Link to="/about">About</Link>
                 </div>
                 <div className="auth-buttons">
-                    <button onClick={() => navigate('/login')} className="sign-in-btn">
-                        Sign In <ArrowRight size={16} />
-                    </button>
+                    <button onClick={() => navigate('/login')} className="sign-in-btn">Sign In <ArrowRight size={16} /></button>
                     <button onClick={() => navigate('/signup')} className="get-started-btn">Get Started</button>
                 </div>
             </div>
@@ -486,12 +417,9 @@ const SignUp = () => {
                         <h1 className="form-title">Join CivicEye</h1>
                         <p className="form-subtitle">Help make your community cleaner and better</p>
 
-                        {/* Progress bar */}
                         <div className="progress-bar-container">
                             <div className="progress-line-fill" style={{ width: `${(step - 1) * 50}%` }} />
-                            {[1, 2, 3].map(s => (
-                                <div key={s} className={`progress-step ${step >= s ? 'active' : ''}`} />
-                            ))}
+                            {[1, 2, 3].map(s => <div key={s} className={`progress-step ${step >= s ? 'active' : ''}`} />)}
                         </div>
                         <p className="step-label">
                             Step {step} of 3:{' '}
@@ -505,7 +433,9 @@ const SignUp = () => {
                         )}
 
                         <form onSubmit={handleSubmit} noValidate>
-                            {renderStep()}
+                            {step === 1 && renderStep1()}
+                            {step === 2 && renderStep2()}
+                            {step === 3 && renderStep3()}
                         </form>
 
                         <div className="login-link">
@@ -518,8 +448,7 @@ const SignUp = () => {
                     <div className="right-panel-content">
                         <h2 className="right-panel-title">Join Our Community!</h2>
                         <p className="right-panel-subtitle">
-                            Sign up today to start reporting issues, tracking progress, and helping
-                            your community thrive.
+                            Sign up today to start reporting issues, tracking progress, and helping your community thrive.
                         </p>
                     </div>
                 </div>
