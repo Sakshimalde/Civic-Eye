@@ -9,26 +9,15 @@ const app = express();
 /* =========================
    ✅ CORS CONFIG (FINAL)
    ========================= */
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-
-      if (origin.startsWith("http://localhost")) {
-        return callback(null, true);
-      }
-
-      if (origin.endsWith(".vercel.app")) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  })
-);
+   app.use(
+    cors({
+      origin: [
+        "http://localhost:3000",
+        "http://187.127.148.7"
+      ],
+      credentials: true
+    })
+  );
 
 /* =========================
    ✅ MIDDLEWARES
