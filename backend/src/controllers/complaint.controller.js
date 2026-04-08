@@ -46,6 +46,7 @@ const getPendingRequests = asyncHandler(async (req, res) => {
 });
 
 // ================= Register Complaint =================
+console.log("📧 [REGISTER] Sending email to:", user.email);
 const registerComplaint = asyncHandler(async (req, res, next) => {
     const userId = req.user?._id;
     let { title, description, address, assignedTo, locationCoords } = req.body;
@@ -75,6 +76,7 @@ const registerComplaint = asyncHandler(async (req, res, next) => {
         userId: req.user._id, title, description, address,
         photo: complaintPhotoUrl, assignedTo, locationCoords
     });
+    console.log("✅ [REGISTER] Email function called");
 
     const createdComplaint = await Complaint.findById(complaint._id);
     if (!createdComplaint) throw new ApiError(500, "complaint registration failed");
@@ -130,6 +132,8 @@ const updateComplaintAssignment = asyncHandler(async (req, res) => {
 
     res.status(200).json(new ApiResponse(200, updatedComplaint, "Complaint assigned successfully"));
 });
+console.log("📧 [ASSIGN] Sending email to:", user.email);
+
 // complaint_controller.js — PART 2 of 3
 // Contains: getSingleComplaint, viewComplaint, editComplaint, deleteComplaint, getAllComplaints
 
@@ -305,6 +309,8 @@ const volunteerUpdateStatus = asyncHandler(async (req, res) => {
     try {
         const citizen = complaint.userId;
         if (citizen?.email && status === 'inReview' && previousStatus !== 'inReview') {
+            console.log("📧 [WORK STARTED] Status changed to inReview");
+console.log("📧 Sending email to:", citizen.email);
             const { subject, html } = workStartedEmail({
                 citizenName: citizen.name, title: complaint.title,
                 volunteerName: req.user.name, workNotes: workNotes || '',
