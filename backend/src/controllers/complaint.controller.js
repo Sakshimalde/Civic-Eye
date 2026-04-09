@@ -131,7 +131,7 @@ const updateComplaintAssignment = asyncHandler(async (req, res) => {
 
     res.status(200).json(new ApiResponse(200, updatedComplaint, "Complaint assigned successfully"));
 });
-console.log("📧 [ASSIGN] Sending email to:", user.email);
+
 
 // complaint_controller.js — PART 2 of 3
 // Contains: getSingleComplaint, viewComplaint, editComplaint, deleteComplaint, getAllComplaints
