@@ -46,7 +46,6 @@ const getPendingRequests = asyncHandler(async (req, res) => {
 });
 
 // ================= Register Complaint =================
-console.log("📧 [REGISTER] Sending email to:", user.email);
 const registerComplaint = asyncHandler(async (req, res, next) => {
     const userId = req.user?._id;
     let { title, description, address, assignedTo, locationCoords } = req.body;
