@@ -11,7 +11,6 @@ const CATEGORY_TO_ASSIGNEDTO_MAP = {
     'Potholes': 'Roads and street infrastructure',
     'Street Lights': 'Street lighting and electrical assets',
     'Water Issues': 'Water, sewerage, and stormwater',
-    'Vandalism': 'Ward/zone office and central admin',
     'Other': 'Ward/zone office and central admin'
 };
 
@@ -48,7 +47,6 @@ const UserReportIssue = () => {
         'Potholes',
         'Water Issues',
         'Street Lights',
-        'Vandalism',
         'Other'
     ], []);
 
@@ -70,7 +68,6 @@ const UserReportIssue = () => {
         'Potholes': 'Potholes',
         'Street Lights': 'Street Lights',
         'Water Issues': 'Water Issues',
-        'Vandalism': 'Vandalism',
         'Other': null
     };
 
