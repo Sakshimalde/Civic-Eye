@@ -257,7 +257,22 @@ const MyAssignedIssues = () => {
 
                                 <div className="assignment-meta">
                                     <div className="meta-item"><MapPin size={14} /><span>{issue.address?.[0]}</span></div>
-                                    <div className="meta-item"><Calendar size={14} /><span>Reported: {new Date(issue.createdAt).toLocaleDateString()}</span></div>
+                                    <div className="meta-item">
+  <Calendar size={14} />
+  <span>
+    Reported: {
+      new Date(issue.createdAt).toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    }
+  </span>
+</div>
                                     <div className="meta-item"><User size={14} /><span>By: {issue.userId?.name}</span></div>
                                 </div>
 
