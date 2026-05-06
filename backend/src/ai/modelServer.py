@@ -104,12 +104,16 @@ def predict():
 
         # If predicted "Other" (was Vandalism or unrecognized) — accept
         if predicted_class == 'Other':
+
+    # If user selected a category, mark mismatch
+            is_match = False if expected_label else True
+
             return jsonify({
                 'predicted_class': 'Other',
                 'confidence': round(confidence, 4),
-                'is_match': True,
+                'is_match': is_match,
                 'expected_label': expected_label,
-                'note': 'Image could not be confidently classified — accepted as Other'
+                'note': 'Photo mismatch - uploaded image does not match selected category'
             })
 
         # Normal label match

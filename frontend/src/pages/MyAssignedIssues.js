@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; 
+import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
-import { 
-    MapPin, Calendar, User, Edit, Award, X, CheckCircle, 
+import {
+    MapPin, Calendar, User, Edit, Award, X, CheckCircle,
     Clock, Loader2, FileText, AlertTriangle, ArrowRight
 } from 'lucide-react';
-import './MyAssignedIssues.css'; 
+import './MyAssignedIssues.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API_BASE_URL = `${BACKEND_URL}/api/v1`;
@@ -14,10 +14,10 @@ const API_BASE_URL = `${BACKEND_URL}/api/v1`;
 // Maps backend department string → readable category name
 const DEPARTMENT_CATEGORY_MAP = {
     "Municipal sanitation and public health": "Garbage & Waste",
-    "Roads and street infrastructure":        "Potholes & Roads",
-    "Street lighting and electrical assets":  "Street Lights",
-    "Water, sewerage, and stormwater":        "Water Issues",
-    "Ward/zone office and central admin":     "General / Admin",
+    "Roads and street infrastructure": "Potholes & Roads",
+    "Street lighting and electrical assets": "Street Lights",
+    "Water, sewerage, and stormwater": "Water Issues",
+    "Ward/zone office and central admin": "General / Admin",
 };
 
 // Returns readable category from a complaint object.
@@ -35,15 +35,15 @@ const getCategory = (issue) => {
 
 const MyAssignedIssues = () => {
     const navigate = useNavigate();
-    const { user, signOut } = useAuth(); 
+    const { user, signOut } = useAuth();
 
     const [issues, setIssues] = useState([]);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [selectedIssue, setSelectedIssue] = useState(null);
-    const [updateForm, setUpdateForm] = useState({ 
-        status: 'inReview', 
-        proofPhoto: null, 
-        workNotes: '' 
+    const [updateForm, setUpdateForm] = useState({
+        status: 'inReview',
+        proofPhoto: null,
+        workNotes: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authChecked, setAuthChecked] = useState(false);
@@ -71,10 +71,10 @@ const MyAssignedIssues = () => {
     }, [user]);
 
     const stats = useMemo(() => [
-        { label: 'Total Assigned',   value: issues.length,                                                               color: '#2c5292' },
-        { label: 'In Progress',      value: issues.filter(i => i.status === 'inReview' || i.status === 'in progress').length, color: '#dd6b20' },
-        { label: 'Pending Approval', value: issues.filter(i => i.pendingUpdate).length,                                  color: '#7c3aed' },
-        { label: 'Resolved',         value: issues.filter(i => i.status === 'resolved').length,                          color: '#38a169' }
+        { label: 'Total Assigned', value: issues.length, color: '#2c5292' },
+        { label: 'In Progress', value: issues.filter(i => i.status === 'inReview' || i.status === 'in progress').length, color: '#dd6b20' },
+        { label: 'Pending Approval', value: issues.filter(i => i.pendingUpdate).length, color: '#7c3aed' },
+        { label: 'Resolved', value: issues.filter(i => i.status === 'resolved').length, color: '#38a169' }
     ], [issues]);
 
     const handleUpdateClick = (issue) => {
@@ -141,40 +141,40 @@ const MyAssignedIssues = () => {
     const getUserInitials = (name) => {
         if (!name) return 'V';
         const parts = name.split(' ');
-        return parts.length > 1 
-            ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() 
+        return parts.length > 1
+            ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
             : parts[0][0].toUpperCase();
     };
 
     const getStatusLabel = (issue) => {
         if (issue.pendingUpdate) return 'Pending Approval';
         switch (issue.status) {
-            case 'recived':     return 'Received';
-            case 'inReview':    return 'In Review';
+            case 'recived': return 'Received';
+            case 'inReview': return 'In Review';
             case 'in progress': return 'In Progress';
-            case 'resolved':    return 'Resolved';
-            default:            return issue.status;
+            case 'resolved': return 'Resolved';
+            default: return issue.status;
         }
     };
 
     const getStatusClass = (issue) => {
-        if (issue.pendingUpdate)                           return 'status-pending-approval';
+        if (issue.pendingUpdate) return 'status-pending-approval';
         if (issue.resolutionRejected && !issue.pendingUpdate) return 'status-rejected';
         switch (issue.status) {
-            case 'recived':     return 'status-pending';
+            case 'recived': return 'status-pending';
             case 'inReview':
             case 'in progress': return 'status-in-progress';
-            case 'resolved':    return 'status-resolved';
-            default:            return 'status-default';
+            case 'resolved': return 'status-resolved';
+            default: return 'status-default';
         }
     };
 
     const getPriorityColor = (p) => {
         switch (p) {
-            case 'high':   return 'priority-high';
+            case 'high': return 'priority-high';
             case 'medium': return 'priority-medium';
-            case 'low':    return 'priority-low';
-            default:       return 'priority-medium';
+            case 'low': return 'priority-low';
+            default: return 'priority-medium';
         }
     };
 
@@ -258,21 +258,21 @@ const MyAssignedIssues = () => {
                                 <div className="assignment-meta">
                                     <div className="meta-item"><MapPin size={14} /><span>{issue.address?.[0]}</span></div>
                                     <div className="meta-item">
-  <Calendar size={14} />
-  <span>
-    Reported: {
-      new Date(issue.createdAt).toLocaleString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      })
-    }
-  </span>
-</div>
+                                        <Calendar size={14} />
+                                        <span>
+                                            Reported: {
+                                                new Date(issue.createdAt).toLocaleString('en-IN', {
+                                                    timeZone: 'Asia/Kolkata',
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    hour12: true
+                                                })
+                                            }
+                                        </span>
+                                    </div>
                                     <div className="meta-item"><User size={14} /><span>By: {issue.userId?.name}</span></div>
                                 </div>
 
@@ -296,7 +296,7 @@ const MyAssignedIssues = () => {
                                         <div>
                                             <strong>Awaiting Admin Approval</strong>
                                             <div style={{ marginTop: 3, color: '#78350f' }}>
-                                                Your resolution and proof photo have been submitted. 
+                                                Your resolution and proof photo have been submitted.
                                                 The admin will review and either approve or send it back to you.
                                             </div>
                                         </div>
@@ -335,13 +335,13 @@ const MyAssignedIssues = () => {
                                 onClick={() => handleUpdateClick(issue)}
                                 disabled={issue.pendingUpdate || issue.status === 'resolved'}
                                 title={
-                                    issue.pendingUpdate ? 'Awaiting admin approval — cannot update yet' 
-                                    : issue.status === 'resolved' ? 'This issue is resolved'
-                                    : 'Update status'
+                                    issue.pendingUpdate ? 'Awaiting admin approval — cannot update yet'
+                                        : issue.status === 'resolved' ? 'This issue is resolved'
+                                            : 'Update status'
                                 }
-                                style={{ 
-                                    opacity: (issue.pendingUpdate || issue.status === 'resolved') ? 0.5 : 1, 
-                                    cursor: (issue.pendingUpdate || issue.status === 'resolved') ? 'not-allowed' : 'pointer' 
+                                style={{
+                                    opacity: (issue.pendingUpdate || issue.status === 'resolved') ? 0.5 : 1,
+                                    cursor: (issue.pendingUpdate || issue.status === 'resolved') ? 'not-allowed' : 'pointer'
                                 }}
                             >
                                 {issue.pendingUpdate
