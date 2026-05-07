@@ -48,7 +48,7 @@ const getPendingRequests = asyncHandler(async (req, res) => {
 // ================= Register Complaint =================
 const registerComplaint = asyncHandler(async (req, res, next) => {
     const userId = req.user?._id;
-    let { title, description, address, assignedTo, locationCoords } = req.body;
+    let { title, description, address, assignedTo, locationCoords, priority } = req.body;
 
     try { locationCoords = JSON.parse(locationCoords); } catch (e) {}
     try {
@@ -72,8 +72,14 @@ const registerComplaint = asyncHandler(async (req, res, next) => {
     }
 
     const complaint = await Complaint.create({
-        userId: req.user._id, title, description, address,
-        photo: complaintPhotoUrl, assignedTo, locationCoords
+        userId: req.user._id,
+        title,
+        description,
+        address,
+        photo: complaintPhotoUrl,
+        assignedTo,
+        locationCoords,
+        priority: priority || 'low'
     });
     console.log("✅ [REGISTER] Email function called");
 
