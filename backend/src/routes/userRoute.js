@@ -5,15 +5,17 @@ import {
     logoutUser,
     getUserDetails,
     updateUserDetails,
-    getAllUsersAndStats // <<< CRITICAL: NOW IMPORTED
+    getAllUsersAndStats, // <<< CRITICAL: NOW IMPORTED
+    forgotPassword,
+    resetPassword
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const userRouter = Router();
 
-// userRouter.post("/forgot-password", forgotPassword);
-// userRouter.post("/reset-password/:token", resetPassword);
+userRouter.post("/forgot-password", forgotPassword);
+userRouter.post("/reset-password/:token", resetPassword);
 userRouter.route("/register").post(upload.single("profilePhoto"),registerUser);
 userRouter.route("/login").post(loginUser);
 userRouter.route("/logout").post(verifyJWT, logoutUser);
