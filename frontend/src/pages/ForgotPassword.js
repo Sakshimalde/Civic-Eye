@@ -22,7 +22,7 @@ const ForgetPassword = () => {
     if (!email) return setMessage("Please enter your email.");
     setLoading(true);
     try {
-      const res = await axios.post(`${BACKEND_URL}/api/v1/user/forgot-password`, { email });
+      const res = await axios.post(`${BACKEND_URL}/api/v1/users/forgot-password`, { email });
       setMessage(res.data.message);
       // In real case, user gets token in email. Here we simulate by allowing input
       setStep(2);
@@ -39,7 +39,7 @@ const ForgetPassword = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`${BACKEND_URL}/api/v1/user/reset-password/${token}`, { password, confirmPassword });
+      const res = await axios.post(`${BACKEND_URL}/api/v1/users/reset-password/${token}`, { password, confirmPassword });
       setMessage(res.data.message);
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
