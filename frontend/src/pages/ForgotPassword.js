@@ -4,7 +4,8 @@ import { ArrowRight } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import "./ForgetPassword.css";
 import axios from "axios";
-
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+console.log(BACKEND_URL);
 const ForgetPassword = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -21,7 +22,7 @@ const ForgetPassword = () => {
     if (!email) return setMessage("Please enter your email.");
     setLoading(true);
     try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/v1/user/forgot-password`, { email });
+      const res = await axios.post(`${BACKEND_URL}/api/v1/user/forgot-password`, { email });
       setMessage(res.data.message);
       // In real case, user gets token in email. Here we simulate by allowing input
       setStep(2);
@@ -38,7 +39,7 @@ const ForgetPassword = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/v1/user/reset-password/${token}`, { password, confirmPassword });
+      const res = await axios.post(`${BACKEND_URL}/api/v1/user/reset-password/${token}`, { password, confirmPassword });
       setMessage(res.data.message);
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
