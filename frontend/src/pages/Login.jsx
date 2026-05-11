@@ -182,9 +182,9 @@ const Login = () => {
                                     <input type="checkbox" className="checkbox-input" />
                                     Remember me
                                 </label>
-                                <Link to="/forgot-password" className="link-button">
+                                {/* <Link to="/forgot-password" className="link-button">
                                     Forgot Password?
-                                </Link>
+                                </Link> */}
                             </div>
 
                             {/* Submit */}
@@ -193,19 +193,19 @@ const Login = () => {
                             </button>
 
                             {/* Divider */}
-                            <div className="divider">
+                            {/* <div className="divider">
                                 <span>or continue with</span>
-                            </div>
+                            </div> */}
 
                             {/* Google Login */}
-                            <button
+                            {/* <button
                                 type="button"
                                 className="social-google-btn"
                                 onClick={handleGoogleLogin}
                             >
                                 <FcGoogle size={20} />
                                 Sign in with Google
-                            </button>
+                            </button> */}
 
                             {/* Signup */}
                             <div className="create-account-link-container">
