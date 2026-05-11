@@ -8,7 +8,7 @@ import { Complaint } from "../models/complaint.model.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import mongoose from "mongoose";
-import sendEmail from "../utils/sendEmail.js";
+import { sendEmail } from "../utils/sendEmail.js"; // adjust path as needed
 import {
     complaintRegisteredEmail,
     volunteerAssignedEmail,

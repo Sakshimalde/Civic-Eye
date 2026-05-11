@@ -4,7 +4,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import { Complaint } from "../models/complaint.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { randomBytes } from "crypto";
+import { sendEmail } from "../utils/sendEmail.js"; // adjust path as needed
+// Change this at the top of user.controller.js:
+import { randomBytes, createHash } from "crypto";  // ← add createHash
 // ── Shared validators ──────────────────────────────────────────────────────────
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -298,7 +300,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     if (!user) throw new ApiError(404, "No account found with this email address.");
 
     const resetToken = randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    const hashedToken = createHash("sha256").update(resetToken).digest("hex");
 
     user.resetPasswordToken = hashedToken;
     user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
@@ -328,7 +330,7 @@ const resetPassword = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Password must be at least 8 characters with uppercase, lowercase, and a number.");
     }
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const hashedToken = createHash("sha256").update(token).digest("hex");
 
     const user = await User.findOne({
         resetPasswordToken: hashedToken,
