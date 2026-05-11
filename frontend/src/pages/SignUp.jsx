@@ -5,6 +5,7 @@ import { AlertCircle, CheckCircle } from 'lucide-react';
 import './SignUp.css';
 import { ArrowRight } from 'lucide-react';
 
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // ── Validation helpers ────────────────────────────────────────────────────────
@@ -104,13 +105,13 @@ const SignUp = () => {
     const [touched, setTouched] = useState({});
     const [stepError, setStepError] = useState('');
     const [loading, setLoading] = useState(false);
-
+    const [adminCode, setAdminCode] = useState("");
     const passwordRules = validatePasswordRules(form.password);
     const passwordStrengthScore = Object.values(passwordRules).filter(Boolean).length;
     const strengthLabel = ['', 'Very Weak', 'Weak', 'Fair', 'Strong', 'Very Strong'][passwordStrengthScore];
     const strengthColor = passwordStrengthScore <= 2 ? '#e53e3e' : passwordStrengthScore <= 3 ? '#ed8936' : '#38a169';
     const strengthPercent = (passwordStrengthScore / 5) * 100;
-
+   
     const getFieldError = (name, value) => {
         if (name === 'name') return validateName(value);
         if (name === 'email') return validateEmail(value);
@@ -195,6 +196,7 @@ const SignUp = () => {
             formData.append('location', form.location.trim());
             formData.append('role', form.role);
             formData.append('phone', form.phone.trim());
+            formData.append('adminCode', adminCode);
             if (form.profilePhoto) formData.append('profilePhoto', form.profilePhoto);
             const res = await axios.post(`${BACKEND_URL}/api/v1/users/register`, formData, { withCredentials: true });
             alert(res.data.message || 'Registration successful! Please sign in.');
@@ -385,6 +387,21 @@ const SignUp = () => {
                     ))}
                 </div>
                 <FieldError message={errors.role} />
+                {form.role === 'admin' && (
+    <div className="input-wrapper">
+        <div className="input-group">
+            <i className="input-icon">🔑</i>
+
+            <input
+                type="password"
+                placeholder="Enter Admin Secret Code"
+                value={adminCode}
+                onChange={(e) => setAdminCode(e.target.value)}
+                className="input-field"
+            />
+        </div>
+    </div>
+)}
 
                 <div className="terms-checkbox">
                     <input type="checkbox" id="terms" required />

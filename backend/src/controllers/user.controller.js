@@ -12,7 +12,7 @@ const PHONE_REGEX = /^[\d\s\-().+]{7,20}$/;
 
 // ================= Register =================
 const registerUser = asyncHandler(async (req, res, next) => {
-    const { name, email, password, location, role, phone } = req.body;
+    const { name, email, password, location, role, phone, adminCode } = req.body;
 
     // Required field check
     if (!name || !email || !password || !location) {
@@ -73,6 +73,16 @@ const registerUser = asyncHandler(async (req, res, next) => {
             throw new ApiError(500, "Profile photo upload failed. Please try again.");
         }
         profilePhotoUrl = uploadResult.secure_url;
+    }
+    if (role === "admin") {
+
+        if (!adminCode) {
+            throw new ApiError(403, "Admin secret code is required.");
+        }
+    
+        if (adminCode !== process.env.ADMIN_SECRET_CODE) {
+            throw new ApiError(403, "Invalid admin secret code.");
+        }
     }
 
     const user = await User.create({
