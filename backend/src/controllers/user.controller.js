@@ -4,7 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import { Complaint } from "../models/complaint.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-
+import { randomBytes } from "crypto";
 // ── Shared validators ──────────────────────────────────────────────────────────
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -297,7 +297,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     const user = await User.findOne({ email: email.trim().toLowerCase() });
     if (!user) throw new ApiError(404, "No account found with this email address.");
 
-    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetToken = randomBytes(32).toString("hex");
     const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
     user.resetPasswordToken = hashedToken;
