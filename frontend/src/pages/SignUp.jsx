@@ -388,7 +388,7 @@ const SignUp = () => {
                 </div>
                 <FieldError message={errors.role} />
                 {form.role === 'admin' && (
-    <div className="input-wrapper">
+    <div style={{ marginTop: "20px", border: "2px solid red", padding: "10px" }}>
         <div className="input-group">
             <i className="input-icon">🔑</i>
 
@@ -397,7 +397,13 @@ const SignUp = () => {
                 placeholder="Enter Admin Secret Code"
                 value={adminCode}
                 onChange={(e) => setAdminCode(e.target.value)}
-                className="input-field"
+                style={{
+                    width: "100%",
+                    padding: "12px",
+                    background: "white",
+                    color: "black",
+                    border: "2px solid black"
+                  }}
             />
         </div>
     </div>
